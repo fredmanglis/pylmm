@@ -84,8 +84,15 @@ elif options.emmaFile:
    IN = input.plink(options.emmaFile,type='emma')
 else: parser.error("You must provide at least one PLINK input file base (--tfile or --bfile) or an emma formatted file (--emmaSNP).")
 
+def add_to_K(K,K_j):
+   return K + K_j
+   
 def compute_dgemm(W):
-   """Compute Kinship(W)*j"""
+   """
+   Compute Kinship(W)*j
+
+   For every set of SNPs dgemm is used to multiply matrices T(W)*W
+   """
    try: 
       return linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
    except AttributeError: np.dot(W,W.T) 
@@ -98,7 +105,14 @@ IN.getSNPIterator()
 # Annoying hack to get around the fact that it is expensive to determine the number of SNPs in an emma file
 if options.emmaFile: IN.numSNPs = options.numSNPs
 i = 0
-K = None
+K = np.zeros((n,n))  # The Kinship matrix has dimension individuals x individuals
+
+p = Pool()
+iterations = IN.numSNPs/options.computeSize+1
+iterlist = np.arange(0,iterations,1,dtype=int)
+# print iterations,"\n"
+# print iterlist,"\n"
+
 while i < IN.numSNPs:
    j = 0
    # Read i SNPs at a time into matrix W
@@ -117,10 +131,8 @@ while i < IN.numSNPs:
    if i>8000:  # temporary testing
       break
    K_j = compute_dgemm(W)
-   if K==None:
-      K = K_j
-   else:
-      K = K + K_j
+   K = add_to_K(K,K_j)
+   # print(K.shape)
        
 K = K / float(IN.numSNPs)
 if options.verbose: sys.stderr.write("Saving Kinship file to %s\n" % outFile)
