@@ -84,29 +84,21 @@ elif options.emmaFile:
    IN = input.plink(options.emmaFile,type='emma')
 else: parser.error("You must provide at least one PLINK input file base (--tfile or --bfile) or an emma formatted file (--emmaSNP).")
 
-def f(x):
-   f.q.put('Doing: ' + str(x))
-   return x*x
 
-def f_init(q):
-    f.q = q
-
-def add_to_K(K,K_j):
-   return K + K_j
-   
 def compute_dgemm(job):
    """
    Compute Kinship(W)*j
 
    For every set of SNPs dgemm is used to multiply matrices T(W)*W
    """
-   print job*1000
+   # compute_dgemm.q.put('Job ' + str(job))
    # Read 1000 SNPs at a time into matrix W
+   compute_dgemm.q.put('Job ' + str(job))
    W = np.ones((n,m)) * np.nan # W matrix has dimensions individuals x SNPs (initially all NaNs)
-   maxnum = 1000  # options.computeSize
+   maxnum = options.computeSize
    for j in range(0,maxnum):
       row = job*maxnum + j
-      # print(job*1000,j,row)
+      # print(job*maxnum,j,row)
       if row >= IN.numSNPs:
          W = W[:,range(0,j)]
          break
@@ -117,6 +109,9 @@ def compute_dgemm(job):
    try: 
       return linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
    except AttributeError: np.dot(W,W.T) 
+
+def f_init(q):
+    compute_dgemm.q = q
 
 n = len(IN.indivs)
 m = options.computeSize
@@ -131,22 +126,18 @@ K = np.zeros((n,n))  # The Kinship matrix has dimension individuals x individual
 q = mp.Queue()
 p = mp.Pool(None, f_init, [q])
 iterations = IN.numSNPs/options.computeSize+1
-jobs = range(0,iterations)
+jobs = range(0,8) # range(0,iterations)
 
-# results = p.imap(f, jobs)
+imap_it = p.imap(compute_dgemm, jobs)
 # p.close()
 
-# for r in range(len(jobs)):
-#    print q.get()
-#    print results.next()
-
-for job in jobs:
-   if options.verbose:
-      sys.stderr.write("Processing first %d SNPs\n" % ((job+1)*1000))
-   if job>7:  # temporary testing
-      break
-   K_j = compute_dgemm(job)
-   K = add_to_K(K,K_j)
+for x in imap_it:
+   # sys.stderr.write("Processing first %d SNPs\n" % ((job+1)*options.computeSize))
+   j = q.get()
+   print j
+   K_j = x
+   print j,K_j[:,0]
+   K = K + K_j
 
 K = K / float(IN.numSNPs)
 if options.verbose: sys.stderr.write("Saving Kinship file to %s\n" % outFile)
