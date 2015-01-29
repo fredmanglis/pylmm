@@ -70,7 +70,7 @@ import numpy as np
 from scipy import linalg
 from pylmm.lmm import calculateKinship
 from pylmm import input
-import multiprocessing as mp
+import multiprocessing as mp # Multiprocessing is part of the Python stdlib
 
 if not options.tfile and not options.bfile and not options.emmaFile: 
    parser.error("You must provide at least one PLINK input file base (--tfile or --bfile) or an emma formatted file (--emmaSNP).")
@@ -85,11 +85,14 @@ elif options.emmaFile:
 else: parser.error("You must provide at least one PLINK input file base (--tfile or --bfile) or an emma formatted file (--emmaSNP).")
 
 def compute_W(job):
+   """
+   Read 1000 SNPs at a time into matrix and return the result
+   """
+   n = len(IN.indivs)
+   m = options.computeSize
    W = np.ones((n,m)) * np.nan # W matrix has dimensions individuals x SNPs (initially all NaNs)
-   maxnum = options.computeSize
-   for j in range(0,maxnum):
-      row = job*maxnum + j
-      # print(job*maxnum,j,row)
+   for j in range(0,options.computeSize):
+      row = job*m + j
       if row >= IN.numSNPs:
          W = W[:,range(0,j)]
          break
@@ -105,8 +108,6 @@ def compute_dgemm(job,W):
 
    For every set of SNPs dgemm is used to multiply matrices T(W)*W
    """
-   # compute_dgemm.q.put('Job ' + str(job))
-   # Read 1000 SNPs at a time into matrix W
    compute_dgemm.q.put('Job ' + str(job))
    try: 
       res = linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
@@ -118,8 +119,8 @@ def f_init(q):
     compute_dgemm.q = q
 
 n = len(IN.indivs)
-m = options.computeSize
-jobsize=m
+# m = options.computeSize
+# jobsize=m
 
 IN.getSNPIterator()
 # Annoying hack to get around the fact that it is expensive to determine the number of SNPs in an emma file
@@ -134,8 +135,7 @@ iterations = IN.numSNPs/options.computeSize+1
 
 results = []
 
-# for job in range(iterations):
-for job in range(8):
+for job in range(iterations):
    if options.verbose:
       sys.stderr.write("Processing first %d SNPs\n" % ((job+1)*options.computeSize))
    W = compute_W(job)
