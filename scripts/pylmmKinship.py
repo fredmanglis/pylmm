@@ -25,7 +25,6 @@
 
 import sys
 import pdb
-from multiprocessing import Pool
 
 from optparse import OptionParser,OptionGroup
 usage = """usage: %prog [options] --[tfile | bfile] plinkFileBase outfile
@@ -71,6 +70,7 @@ import numpy as np
 from scipy import linalg
 from pylmm.lmm import calculateKinship
 from pylmm import input
+import multiprocessing as mp
 
 if not options.tfile and not options.bfile and not options.emmaFile: 
    parser.error("You must provide at least one PLINK input file base (--tfile or --bfile) or an emma formatted file (--emmaSNP).")
@@ -83,6 +83,13 @@ elif options.emmaFile:
    if not options.numSNPs: parser.error("You must provide the number of SNPs when specifying an emma formatted file.")
    IN = input.plink(options.emmaFile,type='emma')
 else: parser.error("You must provide at least one PLINK input file base (--tfile or --bfile) or an emma formatted file (--emmaSNP).")
+
+def f(x):
+   f.q.put('Doing: ' + str(x))
+   return x*x
+
+def f_init(q):
+    f.q = q
 
 def add_to_K(K,K_j):
    return K + K_j
@@ -99,45 +106,49 @@ def compute_dgemm(W):
 
 n = len(IN.indivs)
 m = options.computeSize
+jobsize=m
 
 IN.getSNPIterator()
 # Annoying hack to get around the fact that it is expensive to determine the number of SNPs in an emma file
 if options.emmaFile: IN.numSNPs = options.numSNPs
-i = 0
+# i = 0
 K = np.zeros((n,n))  # The Kinship matrix has dimension individuals x individuals
 
-p = Pool()
+q = mp.Queue()
+p = mp.Pool(None, f_init, [q])
 iterations = IN.numSNPs/options.computeSize+1
-iterlist = np.arange(0,iterations,1,dtype=int)
-# print iterations,"\n"
-# print iterlist,"\n"
+jobs = range(0,iterations)
 
-while i < IN.numSNPs:
-   j = 0
-   # Read i SNPs at a time into matrix W
+# results = p.imap(f, jobs)
+# p.close()
+
+# for r in range(len(jobs)):
+#    print q.get()
+#    print results.next()
+
+for job in jobs:
+   print job*1000
+   # Read 1000 SNPs at a time into matrix W
    W = np.ones((n,m)) * np.nan # W matrix has dimensions individuals x SNPs (initially all NaNs)
-   print("--->",W[1,1])
-   while j < options.computeSize and i < IN.numSNPs:
+   maxnum = 1000  # options.computeSize
+   for j in range(0,maxnum):
+      row = job*maxnum + j
+      print(job*1000,j,row)
+      if row >= IN.numSNPs:
+         W = W[:,range(0,j)]
+         break
       snp,id = IN.next()
       if snp.var() == 0:
-	 i += 1
-	 continue
-      W[:,j] = snp
-
-      i += 1
-      j += 1
-   if j < options.computeSize: W = W[:,range(0,j)] 
-
-   print(W.shape)
-   print(W[1,1])
-   print(W[1,10])
-   if options.verbose: sys.stderr.write("Processing first %d SNPs\n" % i)
-   if i>8000:  # temporary testing
+         continue
+      W[:,j] = snp  # set row to list of SNPs
+         
+   # if options.verbose: sys.stderr.write("Processing first %d SNPs\n" % job*1000)
+   if job>7:  # temporary testing
       break
    K_j = compute_dgemm(W)
    K = add_to_K(K,K_j)
-   # print(K.shape)
-       
+
+   
 K = K / float(IN.numSNPs)
 if options.verbose: sys.stderr.write("Saving Kinship file to %s\n" % outFile)
 np.savetxt(outFile,K)
