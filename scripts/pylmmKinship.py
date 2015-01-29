@@ -25,6 +25,7 @@
 
 import sys
 import pdb
+from multiprocessing import Pool
 
 from optparse import OptionParser,OptionGroup
 usage = """usage: %prog [options] --[tfile | bfile] plinkFileBase outfile
@@ -113,6 +114,8 @@ while i < IN.numSNPs:
    if j < options.computeSize: W = W[:,range(0,j)] 
 
    if options.verbose: sys.stderr.write("Processing first %d SNPs\n" % i)
+   if i>8000:  # temporary testing
+      break
    K_j = compute_dgemm(W)
    if K==None:
       K = K_j
