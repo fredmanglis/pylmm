@@ -99,7 +99,6 @@ def compute_dgemm(W):
 
 n = len(IN.indivs)
 m = options.computeSize
-W = np.ones((n,m)) * np.nan
 
 IN.getSNPIterator()
 # Annoying hack to get around the fact that it is expensive to determine the number of SNPs in an emma file
@@ -116,6 +115,8 @@ iterlist = np.arange(0,iterations,1,dtype=int)
 while i < IN.numSNPs:
    j = 0
    # Read i SNPs at a time into matrix W
+   W = np.ones((n,m)) * np.nan # W matrix has dimensions individuals x SNPs (initially all NaNs)
+   print("--->",W[1,1])
    while j < options.computeSize and i < IN.numSNPs:
       snp,id = IN.next()
       if snp.var() == 0:
@@ -127,6 +128,9 @@ while i < IN.numSNPs:
       j += 1
    if j < options.computeSize: W = W[:,range(0,j)] 
 
+   print(W.shape)
+   print(W[1,1])
+   print(W[1,10])
    if options.verbose: sys.stderr.write("Processing first %d SNPs\n" % i)
    if i>8000:  # temporary testing
       break
