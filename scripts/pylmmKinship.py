@@ -107,7 +107,9 @@ def compute_dgemm(job):
          continue
       W[:,j] = snp  # set row to list of SNPs
    try: 
-      return linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
+      res = linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
+      print '***',job,res[:,0]
+      return res
    except AttributeError: np.dot(W,W.T) 
 
 def f_init(q):
@@ -121,16 +123,17 @@ IN.getSNPIterator()
 # Annoying hack to get around the fact that it is expensive to determine the number of SNPs in an emma file
 if options.emmaFile: IN.numSNPs = options.numSNPs
 # i = 0
-K = np.zeros((n,n))  # The Kinship matrix has dimension individuals x individuals
 
+# mp.set_start_method('spawn')
 q = mp.Queue()
 p = mp.Pool(None, f_init, [q])
 iterations = IN.numSNPs/options.computeSize+1
-jobs = range(0,8) # range(0,iterations)
+# jobs = range(0,8) # range(0,iterations)
 
-imap_it = p.imap(compute_dgemm, jobs)
+imap_it = p.imap(compute_dgemm, range(8))
 # p.close()
 
+K = np.zeros((n,n))  # The Kinship matrix has dimension individuals x individuals
 for x in imap_it:
    # sys.stderr.write("Processing first %d SNPs\n" % ((job+1)*options.computeSize))
    j = q.get()
