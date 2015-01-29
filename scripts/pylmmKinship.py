@@ -84,16 +84,7 @@ elif options.emmaFile:
    IN = input.plink(options.emmaFile,type='emma')
 else: parser.error("You must provide at least one PLINK input file base (--tfile or --bfile) or an emma formatted file (--emmaSNP).")
 
-
-def compute_dgemm(job):
-   """
-   Compute Kinship(W)*j
-
-   For every set of SNPs dgemm is used to multiply matrices T(W)*W
-   """
-   # compute_dgemm.q.put('Job ' + str(job))
-   # Read 1000 SNPs at a time into matrix W
-   compute_dgemm.q.put('Job ' + str(job))
+def compute_W(job):
    W = np.ones((n,m)) * np.nan # W matrix has dimensions individuals x SNPs (initially all NaNs)
    maxnum = options.computeSize
    for j in range(0,maxnum):
@@ -106,9 +97,20 @@ def compute_dgemm(job):
       if snp.var() == 0:
          continue
       W[:,j] = snp  # set row to list of SNPs
+   return W
+
+def compute_dgemm(job,W):
+   """
+   Compute Kinship(W)*j
+
+   For every set of SNPs dgemm is used to multiply matrices T(W)*W
+   """
+   # compute_dgemm.q.put('Job ' + str(job))
+   # Read 1000 SNPs at a time into matrix W
+   compute_dgemm.q.put('Job ' + str(job))
    try: 
       res = linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
-      print '***',job,res[:,0]
+      # print '***',job,res[:,0]
       return res
    except AttributeError: np.dot(W,W.T) 
 
@@ -130,16 +132,21 @@ p = mp.Pool(None, f_init, [q])
 iterations = IN.numSNPs/options.computeSize+1
 # jobs = range(0,8) # range(0,iterations)
 
-imap_it = p.imap(compute_dgemm, range(8))
-# p.close()
+results = []
 
+# for job in range(iterations):
+for job in range(8):
+   if options.verbose:
+      sys.stderr.write("Processing first %d SNPs\n" % ((job+1)*options.computeSize))
+   W = compute_W(job)
+   results.append(p.apply_async(compute_dgemm, (job,W)))
+   
 K = np.zeros((n,n))  # The Kinship matrix has dimension individuals x individuals
-for x in imap_it:
-   # sys.stderr.write("Processing first %d SNPs\n" % ((job+1)*options.computeSize))
+for x in results:
    j = q.get()
-   print j
-   K_j = x
-   print j,K_j[:,0]
+   if options.verbose: sys.stderr.write(j+"\n")
+   K_j = x.get()
+   # print j,K_j[:,0]
    K = K + K_j
 
 K = K / float(IN.numSNPs)
