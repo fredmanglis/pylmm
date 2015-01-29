@@ -94,12 +94,26 @@ def f_init(q):
 def add_to_K(K,K_j):
    return K + K_j
    
-def compute_dgemm(W):
+def compute_dgemm(job):
    """
    Compute Kinship(W)*j
 
    For every set of SNPs dgemm is used to multiply matrices T(W)*W
    """
+   print job*1000
+   # Read 1000 SNPs at a time into matrix W
+   W = np.ones((n,m)) * np.nan # W matrix has dimensions individuals x SNPs (initially all NaNs)
+   maxnum = 1000  # options.computeSize
+   for j in range(0,maxnum):
+      row = job*maxnum + j
+      print(job*1000,j,row)
+      if row >= IN.numSNPs:
+         W = W[:,range(0,j)]
+         break
+      snp,id = IN.next()
+      if snp.var() == 0:
+         continue
+      W[:,j] = snp  # set row to list of SNPs
    try: 
       return linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
    except AttributeError: np.dot(W,W.T) 
@@ -127,25 +141,11 @@ jobs = range(0,iterations)
 #    print results.next()
 
 for job in jobs:
-   print job*1000
-   # Read 1000 SNPs at a time into matrix W
-   W = np.ones((n,m)) * np.nan # W matrix has dimensions individuals x SNPs (initially all NaNs)
-   maxnum = 1000  # options.computeSize
-   for j in range(0,maxnum):
-      row = job*maxnum + j
-      print(job*1000,j,row)
-      if row >= IN.numSNPs:
-         W = W[:,range(0,j)]
-         break
-      snp,id = IN.next()
-      if snp.var() == 0:
-         continue
-      W[:,j] = snp  # set row to list of SNPs
          
    # if options.verbose: sys.stderr.write("Processing first %d SNPs\n" % job*1000)
    if job>7:  # temporary testing
       break
-   K_j = compute_dgemm(W)
+   K_j = compute_dgemm(job)
    K = add_to_K(K,K_j)
 
    
