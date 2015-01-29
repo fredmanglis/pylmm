@@ -83,6 +83,12 @@ elif options.emmaFile:
    IN = input.plink(options.emmaFile,type='emma')
 else: parser.error("You must provide at least one PLINK input file base (--tfile or --bfile) or an emma formatted file (--emmaSNP).")
 
+def compute_dgemm(W):
+   """Compute Kinship(W)*j"""
+   try: 
+      return linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
+   except AttributeError: np.dot(W,W.T) 
+
 n = len(IN.indivs)
 m = options.computeSize
 W = np.ones((n,m)) * np.nan
@@ -94,6 +100,7 @@ i = 0
 K = None
 while i < IN.numSNPs:
    j = 0
+   # Read i SNPs at a time into matrix W
    while j < options.computeSize and i < IN.numSNPs:
       snp,id = IN.next()
       if snp.var() == 0:
@@ -106,16 +113,12 @@ while i < IN.numSNPs:
    if j < options.computeSize: W = W[:,range(0,j)] 
 
    if options.verbose: sys.stderr.write("Processing first %d SNPs\n" % i)
-   if K == None: 
-      try: 
-	 K = linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False) # calculateKinship(W) * j
-      except AttributeError: K = np.dot(W,W.T) 
+   K_j = compute_dgemm(W)
+   if K==None:
+      K = K_j
    else:
-      try: 
-	 K_j = linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False) # calculateKinship(W) * j
-      except AttributeError: K_j = np.dot(W,W.T)
       K = K + K_j
-
+       
 K = K / float(IN.numSNPs)
 if options.verbose: sys.stderr.write("Saving Kinship file to %s\n" % outFile)
 np.savetxt(outFile,K)
