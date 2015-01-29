@@ -106,7 +106,7 @@ def compute_dgemm(job):
    maxnum = 1000  # options.computeSize
    for j in range(0,maxnum):
       row = job*maxnum + j
-      print(job*1000,j,row)
+      # print(job*1000,j,row)
       if row >= IN.numSNPs:
          W = W[:,range(0,j)]
          break
@@ -141,14 +141,13 @@ jobs = range(0,iterations)
 #    print results.next()
 
 for job in jobs:
-         
-   # if options.verbose: sys.stderr.write("Processing first %d SNPs\n" % job*1000)
+   if options.verbose:
+      sys.stderr.write("Processing first %d SNPs\n" % ((job+1)*1000))
    if job>7:  # temporary testing
       break
    K_j = compute_dgemm(job)
    K = add_to_K(K,K_j)
 
-   
 K = K / float(IN.numSNPs)
 if options.verbose: sys.stderr.write("Saving Kinship file to %s\n" % outFile)
 np.savetxt(outFile,K)
