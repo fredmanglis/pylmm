@@ -71,6 +71,7 @@ from scipy import linalg
 from pylmm.lmm import calculateKinship
 from pylmm import input
 import multiprocessing as mp # Multiprocessing is part of the Python stdlib
+import Queue 
 
 if not options.tfile and not options.bfile and not options.emmaFile: 
    parser.error("You must provide at least one PLINK input file base (--tfile or --bfile) or an emma formatted file (--emmaSNP).")
@@ -108,11 +109,10 @@ def compute_dgemm(job,W):
 
    For every set of SNPs dgemm is used to multiply matrices T(W)*W
    """
-   compute_dgemm.q.put('Job ' + str(job))
    try: 
       res = linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
-      # print '***',job,res[:,0]
-      return res
+      compute_dgemm.q.put([job,res])
+      return job
    except AttributeError: np.dot(W,W.T) 
 
 def f_init(q):
@@ -135,20 +135,34 @@ iterations = IN.numSNPs/options.computeSize+1
 
 results = []
 
+K = np.zeros((n,n))  # The Kinship matrix has dimension individuals x individuals
+
+completed = 0
+
+# for job in range(8):
 for job in range(iterations):
    if options.verbose:
-      sys.stderr.write("Processing first %d SNPs\n" % ((job+1)*options.computeSize))
+      sys.stderr.write("Processing job %d first %d SNPs\n" % (job, ((job+1)*options.computeSize)))
    W = compute_W(job)
-   results.append(p.apply_async(compute_dgemm, (job,W)))
-   
-K = np.zeros((n,n))  # The Kinship matrix has dimension individuals x individuals
-for x in results:
-   j = q.get()
-   if options.verbose: sys.stderr.write(j+"\n")
-   K_j = x.get()
+   results.append(p.apply_async(compute_dgemm, (job,W)))   
+   # Do we have a result?
+   try: 
+     j,x = q.get_nowait()
+     if options.verbose: sys.stderr.write("Job "+str(j)+" finished\n")
+     K_j = x
+     # print j,K_j[:,0]
+     K = K + K_j
+     completed += 1
+   except Queue.Empty:
+     pass
+
+for job in range(len(results)-completed):
+   j,x = q.get()
+   if options.verbose: sys.stderr.write("Job "+str(j)+" finished\n")
+   K_j = x
    # print j,K_j[:,0]
    K = K + K_j
-
+        
 K = K / float(IN.numSNPs)
 if options.verbose: sys.stderr.write("Saving Kinship file to %s\n" % outFile)
 np.savetxt(outFile,K)
