@@ -332,12 +332,13 @@ for snp_id in IN:
    if count % 1000 == 0:
       if options.verbose:
          sys.stderr.write("At SNP %d\n" % count)
-      if count>8000 :
-         break         # for testing only
+      # if count>8000 :
+      #    break         # for testing only
+   if count % 100 == 0:
       for line in p.imap(compute_snp,collect):
          out.write(line)
-      
       collect = []
+      
    collect.append(snp_id)
 for line in p.imap(compute_snp,collect):
    out.write(line)
