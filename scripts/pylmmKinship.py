@@ -49,6 +49,7 @@ basicGroup.add_option("--emmaNumSNPs", dest="numSNPs", type="int", default=0,
 
 basicGroup.add_option("-e", "--efile", dest="saveEig", help="Save eigendecomposition to this file.")
 basicGroup.add_option("-n", default=1000,dest="computeSize", type="int", help="The maximum number of SNPs to read into memory at once (default 1000).  This is important when there is a large number of SNPs, because memory could be an issue.")
+basicGroup.add_option("-t", "--nthreads", dest="numThreads", help="maximum number of threads to use")
 
 basicGroup.add_option("-v", "--verbose",
                   action="store_true", dest="verbose", default=False,
@@ -76,6 +77,10 @@ import Queue
 if not options.tfile and not options.bfile and not options.emmaFile: 
    parser.error("You must provide at least one PLINK input file base (--tfile or --bfile) or an emma formatted file (--emmaSNP).")
 
+numThreads = None
+if options.numThreads:
+   numThreads = int(options.numThreads)
+   
 if options.verbose: sys.stderr.write("Reading PLINK input...\n")
 if options.bfile: IN = input.plink(options.bfile,type='b')
 elif options.tfile: IN = input.plink(options.tfile,type='t')
@@ -129,7 +134,7 @@ if options.emmaFile: IN.numSNPs = options.numSNPs
 
 # mp.set_start_method('spawn')
 q = mp.Queue()
-p = mp.Pool(None, f_init, [q])
+p = mp.Pool(numThreads, f_init, [q])
 iterations = IN.numSNPs/options.computeSize+1
 # jobs = range(0,8) # range(0,iterations)
 
