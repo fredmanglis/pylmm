@@ -90,6 +90,8 @@ advancedGroup.add_option("--eigen", dest="eigenfile",
 advancedGroup.add_option("--noMean", dest="noMean", default=False,action="store_true",
                   help="This option only applies when --cofile is used.  When covfile is provided, the program will automatically add a global mean covariate to the model unless this option is specified.")
 
+basicGroup.add_option("-t", "--nthreads", dest="numThreads", help="maximum number of threads to use")
+
 advancedGroup.add_option("-v", "--verbose",
                   action="store_true", dest="verbose", default=False,
                   help="Print extra info")
@@ -111,6 +113,9 @@ from scipy import linalg
 from pylmm.lmm import LMM
 from pylmm import input
 
+import multiprocessing as mp # Multiprocessing is part of the Python stdlib
+import Queue 
+
 if len(args) != 1:  
    parser.print_help()
    sys.exit()
@@ -122,6 +127,10 @@ if not options.tfile and not options.bfile and not options.emmaFile:
    parser.error("You must provide at least one PLINK input file base (--tfile or --bfile) or an EMMA formatted file (--emmaSNP).")
 if not options.kfile:
    parser.error("Please provide a pre-computed kinship file")
+
+numThreads = None
+if options.numThreads:
+   numThreads = int(options.numThreads)
 
 # READING PLINK input
 if options.verbose: sys.stderr.write("Reading SNP input...\n")
@@ -243,6 +252,27 @@ if not options.refit:
    if options.verbose and not options.kfile2: sys.stderr.write("\t heritability=%0.3f, sigma=%0.3f\n" % (L.optH,L.optSigma))
    if options.verbose and options.kfile2: sys.stderr.write("\t heritability=%0.3f, sigma=%0.3f, w=%0.3f\n" % (L.optH,L.optSigma,L.optW))
 
+def compute_dgemm(job,W):
+   """
+   Compute Kinship(W)*j
+
+   For every set of SNPs dgemm is used to multiply matrices T(W)*W
+   """
+   try: 
+      res = linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
+      compute_dgemm.q.put([job,res])
+      return job
+   except AttributeError: np.dot(W,W.T) 
+
+def f_init(q):
+    compute_dgemm.q = q
+
+# Set up the pool
+# mp.set_start_method('spawn')
+q = mp.Queue()
+p = mp.Pool(numThreads, f_init, [q])
+collect_x = []
+   
 # Buffers for pvalues and t-stats
 PS = []
 TS = []
@@ -278,26 +308,26 @@ for snp,id in IN:
       Ks = K[keeps,:][:,keeps]
       if options.kfile2:
          K2s = K2[keeps,:][:,keeps]
-      if options.kfile2:
          Ls = LMM_withK2(Ys,Ks,X0=X0s,verbose=options.verbose,K2=K2s)
       else:
          Ls = LMM(Ys,Ks,X0=X0s,verbose=options.verbose)
       if options.refit:
          Ls.fit(X=xs,REML=options.REML)
-      else: 
+      else:
 	 #try:
 	 Ls.fit(REML=options.REML)
 	 #except: pdb.set_trace()
       ts,ps,beta,betaVar = Ls.association(xs,REML=options.REML,returnBeta=True)
-   else: 
+   else:
       if x.var() == 0: 
 	 PS.append(np.nan)
 	 TS.append(np.nan)
-	 outputResult(id,np.nan,np.nan,np.nan,np.nan)
+	 outputResult(id,np.nan,np.nan,np.nan,np.nan) # writes nan values
 	 continue
 
       if options.refit:
          L.fit(X=x,REML=options.REML)
+      # This is where it happens
       ts,ps,beta,betaVar = L.association(x,REML=options.REML,returnBeta=True)
 	    
    outputResult(id,beta,np.sqrt(betaVar).sum(),ts,ps)
