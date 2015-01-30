@@ -254,6 +254,8 @@ for snp,id in IN:
    count += 1
    if options.verbose and count % 1000 == 0: 
       sys.stderr.write("At SNP %d\n" % count)
+      if count>8000 :
+         break         # for testing only
       
    x = snp[keep].reshape((n,1))  # all the SNPs
    v = np.isnan(x).reshape((-1,))
