@@ -271,14 +271,19 @@ for snp,id in IN:
 
       # Its ok to center the genotype -  I used options.normalizeGenotype to 
       # force the removal of missing genotypes as opposed to replacing them with MAF.
-      if not options.normalizeGenotype: xs = (xs - xs.mean()) / np.sqrt(xs.var())
+      if not options.normalizeGenotype:
+         xs = (xs - xs.mean()) / np.sqrt(xs.var())
       Ys = Y[keeps]
       X0s = X0[keeps,:]
       Ks = K[keeps,:][:,keeps]
-      if options.kfile2: K2s = K2[keeps,:][:,keeps]
-      if options.kfile2: Ls = LMM_withK2(Ys,Ks,X0=X0s,verbose=options.verbose,K2=K2s)
-      else: Ls = LMM(Ys,Ks,X0=X0s,verbose=options.verbose)
-      if options.refit: Ls.fit(X=xs,REML=options.REML)
+      if options.kfile2:
+         K2s = K2[keeps,:][:,keeps]
+      if options.kfile2:
+         Ls = LMM_withK2(Ys,Ks,X0=X0s,verbose=options.verbose,K2=K2s)
+      else:
+         Ls = LMM(Ys,Ks,X0=X0s,verbose=options.verbose)
+      if options.refit:
+         Ls.fit(X=xs,REML=options.REML)
       else: 
 	 #try:
 	 Ls.fit(REML=options.REML)
@@ -291,7 +296,8 @@ for snp,id in IN:
 	 outputResult(id,np.nan,np.nan,np.nan,np.nan)
 	 continue
 
-      if options.refit: L.fit(X=x,REML=options.REML)
+      if options.refit:
+         L.fit(X=x,REML=options.REML)
       ts,ps,beta,betaVar = L.association(x,REML=options.REML,returnBeta=True)
 	    
    outputResult(id,beta,np.sqrt(betaVar).sum(),ts,ps)
