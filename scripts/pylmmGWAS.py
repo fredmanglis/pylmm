@@ -29,8 +29,11 @@ import sys
 
 def printOutHead(): out.write("\t".join(["SNP_ID","BETA","BETA_SD","F_STAT","P_VALUE"]) + "\n")
 
+def formatResult(id,beta,betaSD,ts,ps):
+   return "\t".join([str(x) for x in [id,beta,betaSD,ts,ps]]) + "\n"
+   
 def outputResult(id,beta,betaSD,ts,ps):
-   out.write("\t".join([str(x) for x in [id,beta,betaSD,ts,ps]]) + "\n")
+   out.write(formatResult(id,beta,betaSD,ts,ps))
 
 from optparse import OptionParser,OptionGroup
 usage = """usage: %prog [options] --kfile kinshipFile --[tfile | bfile] plinkFileBase outfileBase
@@ -252,52 +255,22 @@ if not options.refit:
    if options.verbose and not options.kfile2: sys.stderr.write("\t heritability=%0.3f, sigma=%0.3f\n" % (L.optH,L.optSigma))
    if options.verbose and options.kfile2: sys.stderr.write("\t heritability=%0.3f, sigma=%0.3f, w=%0.3f\n" % (L.optH,L.optSigma,L.optW))
 
-def compute_dgemm(job,W):
-   """
-   Compute Kinship(W)*j
-
-   For every set of SNPs dgemm is used to multiply matrices T(W)*W
-   """
-   try: 
-      res = linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
-      compute_dgemm.q.put([job,res])
-      return job
-   except AttributeError: np.dot(W,W.T) 
-
-def f_init(q):
-    compute_dgemm.q = q
-
-# Set up the pool
-# mp.set_start_method('spawn')
-q = mp.Queue()
-p = mp.Pool(numThreads, f_init, [q])
-collect_x = []
-   
-# Buffers for pvalues and t-stats
-PS = []
-TS = []
-count = 0
-out = open(outFile,'w')
-printOutHead()
-
-for snp,id in IN:
-   count += 1
-   if options.verbose and count % 1000 == 0: 
-      sys.stderr.write("At SNP %d\n" % count)
-      if count>8000 :
-         break         # for testing only
-      
+def compute_snp(collect):
+   snp = collect[0]
+   id = collect[1]
+   # result = []
+   # Check SNPs for missing values
    x = snp[keep].reshape((n,1))  # all the SNPs
    v = np.isnan(x).reshape((-1,))
-   # Check SNPs for missing values
    if v.sum():
       keeps = True - v
       xs = x[keeps,:]
       if keeps.sum() <= 1 or xs.var() <= 1e-6: 
-	 PS.append(np.nan)
-	 TS.append(np.nan)
-	 outputResult(id,np.nan,np.nan,np.nan,np.nan)
-	 continue
+         # PS.append(np.nan)
+         # TS.append(np.nan)
+         # result.append(formatResult(id,np.nan,np.nan,np.nan,np.nan))
+         # continue
+         return formatResult(id,np.nan,np.nan,np.nan,np.nan)
 
       # Its ok to center the genotype -  I used options.normalizeGenotype to 
       # force the removal of missing genotypes as opposed to replacing them with MAF.
@@ -312,25 +285,61 @@ for snp,id in IN:
       else:
          Ls = LMM(Ys,Ks,X0=X0s,verbose=options.verbose)
       if options.refit:
-         Ls.fit(X=xs,REML=options.REML)
+        Ls.fit(X=xs,REML=options.REML)
       else:
-	 #try:
-	 Ls.fit(REML=options.REML)
-	 #except: pdb.set_trace()
+         #try:
+         Ls.fit(REML=options.REML)
+         #except: pdb.set_trace()
       ts,ps,beta,betaVar = Ls.association(xs,REML=options.REML,returnBeta=True)
    else:
       if x.var() == 0: 
-	 PS.append(np.nan)
-	 TS.append(np.nan)
-	 outputResult(id,np.nan,np.nan,np.nan,np.nan) # writes nan values
-	 continue
+         # PS.append(np.nan)
+         # TS.append(np.nan)
+         # result.append(formatResult(id,np.nan,np.nan,np.nan,np.nan)) # writes nan values
+         return formatResult(id,np.nan,np.nan,np.nan,np.nan)
+         # continue
 
       if options.refit:
          L.fit(X=x,REML=options.REML)
       # This is where it happens
       ts,ps,beta,betaVar = L.association(x,REML=options.REML,returnBeta=True)
-	    
-   outputResult(id,beta,np.sqrt(betaVar).sum(),ts,ps)
-   PS.append(ps)
-   TS.append(ts)
+   
+   return formatResult(id,beta,np.sqrt(betaVar).sum(),ts,ps)
+   # PS.append(ps)
+   # TS.append(ts)
+   # return len(result)
+   # compute.q.put(result)
+   # return None
+
+def f_init(q):
+   compute_snp.q = q
+
+# Set up the pool
+# mp.set_start_method('spawn')
+q = mp.Queue()
+p = mp.Pool(numThreads, f_init, [q])
+collect = []
+   
+# Buffers for pvalues and t-stats
+# PS = []
+# TS = []
+count = 0
+out = open(outFile,'w')
+printOutHead()
+
+for snp_id in IN:
+   count += 1
+   if count % 1000 == 0:
+      if options.verbose:
+         sys.stderr.write("At SNP %d\n" % count)
+      if count>8000 :
+         break         # for testing only
+      for line in p.imap(compute_snp,collect):
+         out.write(line)
+      
+      collect = []
+   collect.append(snp_id)
+for line in p.imap(compute_snp,collect):
+   out.write(line)
+
 
