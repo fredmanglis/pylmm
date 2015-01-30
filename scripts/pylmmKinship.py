@@ -114,11 +114,13 @@ def compute_dgemm(job,W):
 
    For every set of SNPs dgemm is used to multiply matrices T(W)*W
    """
-   try: 
+   res = None
+   try:
       res = linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
-      compute_dgemm.q.put([job,res])
-      return job
-   except AttributeError: np.dot(W,W.T) 
+   except AttributeError:
+      res = np.dot(W,W.T) 
+   compute_dgemm.q.put([job,res])
+   return job
 
 def f_init(q):
     compute_dgemm.q = q
