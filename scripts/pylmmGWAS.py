@@ -28,9 +28,9 @@ import time
 import sys
 
 def printOutHead(): out.write("\t".join(["SNP_ID","BETA","BETA_SD","F_STAT","P_VALUE"]) + "\n")
+
 def outputResult(id,beta,betaSD,ts,ps):
    out.write("\t".join([str(x) for x in [id,beta,betaSD,ts,ps]]) + "\n")
-
 
 from optparse import OptionParser,OptionGroup
 usage = """usage: %prog [options] --kfile kinshipFile --[tfile | bfile] plinkFileBase outfileBase
@@ -255,7 +255,7 @@ for snp,id in IN:
    if options.verbose and count % 1000 == 0: 
       sys.stderr.write("At SNP %d\n" % count)
       
-   x = snp[keep].reshape((n,1))
+   x = snp[keep].reshape((n,1))  # all the SNPs
    v = np.isnan(x).reshape((-1,))
    # Check SNPs for missing values
    if v.sum():

@@ -37,7 +37,10 @@ def matrixMult(A,B):
    try:
       linalg.fblas
    except AttributeError:
+      sys.stderr.write("WARNING: linalg.fblas not found, using numpy.dot instead!\n")
       return np.dot(A,B)
+
+   sys.stderr.write("Using linalg.fblas\n")
 
    # If the matrices are in Fortran order then the computations will be faster
    # when using dgemm.  Otherwise, the function will copy the matrix and that takes time.
