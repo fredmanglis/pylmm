@@ -270,8 +270,8 @@ def compute_snp(collect):
    # Check SNPs for missing values
    x = snp[keep].reshape((n,1))  # all the SNPs
    v = np.isnan(x).reshape((-1,))
-   print v
    if v.sum():
+      # NOTE: this code appears to be unreachable!
       if options.verbose:
          sys.stderr.write("Found missing values in "+str(x))
       keeps = True - v
@@ -303,7 +303,9 @@ def compute_snp(collect):
          #except: pdb.set_trace()
       ts,ps,beta,betaVar = Ls.association(xs,REML=options.REML,returnBeta=True)
    else:
-      if x.var() == 0: 
+      if x.var() == 0:
+         # Note: this code appears to be unreachable!
+         
          # PS.append(np.nan)
          # TS.append(np.nan)
          # result.append(formatResult(id,np.nan,np.nan,np.nan,np.nan)) # writes nan values
