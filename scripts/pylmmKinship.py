@@ -22,6 +22,11 @@
 #LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 #NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 #SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# Example:
+#
+#   env PYTHONPATH=. python scripts/pylmmKinship.py -v --bfile data/test_snps.132k.clean.noX out.kin
+
 
 import sys
 import pdb
@@ -50,6 +55,7 @@ basicGroup.add_option("--emmaNumSNPs", dest="numSNPs", type="int", default=0,
 basicGroup.add_option("-e", "--efile", dest="saveEig", help="Save eigendecomposition to this file.")
 basicGroup.add_option("-n", default=1000,dest="computeSize", type="int", help="The maximum number of SNPs to read into memory at once (default 1000).  This is important when there is a large number of SNPs, because memory could be an issue.")
 basicGroup.add_option("-t", "--nthreads", dest="numThreads", help="maximum number of threads to use")
+basicGroup.add_option("--blas", action="store_true", default=False, dest="useBLAS", help="Use BLAS instead of numpy matrix multiplication")
 
 basicGroup.add_option("-v", "--verbose",
                   action="store_true", dest="verbose", default=False,
@@ -82,7 +88,8 @@ if options.numThreads:
    numThreads = int(options.numThreads)
    
 if options.verbose: sys.stderr.write("Reading PLINK input...\n")
-if options.bfile: IN = input.plink(options.bfile,type='b')
+if options.bfile:
+   IN = input.plink(options.bfile,type='b')
 elif options.tfile: IN = input.plink(options.tfile,type='t')
 #elif options.pfile: IN = input.plink(options.pfile,type='p')
 elif options.emmaFile: 
@@ -102,7 +109,7 @@ def compute_W(job):
       if row >= IN.numSNPs:
          W = W[:,range(0,j)]
          break
-      snp,id = IN.next()
+      snp,id = IN.next()  # 0<=snp<=1.0
       if snp.var() == 0:
          continue
       W[:,j] = snp  # set row to list of SNPs
@@ -115,10 +122,10 @@ def compute_dgemm(job,W):
    For every set of SNPs dgemm is used to multiply matrices T(W)*W
    """
    res = None
-   try:
+   if options.useBLAS:
       res = linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
-   except AttributeError:
-      res = np.dot(W,W.T) 
+   else:
+      res = np.dot(W,W.T)
    compute_dgemm.q.put([job,res])
    return job
 
@@ -134,6 +141,8 @@ IN.getSNPIterator()
 if options.emmaFile: IN.numSNPs = options.numSNPs
 # i = 0
 
+if options.useBLAS:
+   sys.stderr.write("Using BLAS...\n")
 # mp.set_start_method('spawn')
 q = mp.Queue()
 p = mp.Pool(numThreads, f_init, [q])
