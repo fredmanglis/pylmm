@@ -28,14 +28,17 @@ import numpy as np
 import struct
 import pdb
 
+def message(s):
+   sys.stderr.write(s+"\n")
+   
 class plink:
    def __init__(self,fbase,kFile=None,phenoFile=None,type='b',normGenotype=True,readKFile=False,fastLMM_kinship=False):
-
       self.fbase = fbase
       self.type = type
       if not type == 'emma': self.indivs = self.getIndivs(self.fbase,type)
       else: 
 	 # Just read a line from the SNP file and see how many individuals we have
+         message("Reading plink " + fbase)
 	 f = open(fbase,'r')
 	 self.indivs = range(len(f.readline().strip().split()))
 	 f.close()
@@ -78,6 +81,8 @@ class plink:
       self.have_read = 0
       self.numSNPs = -1
       file = self.fbase
+
+      message("Reading EMMA SNP "+file)
       self.fhandle = open(file,'r')
 
       return self
@@ -87,6 +92,7 @@ class plink:
       file = self.fbase + '.bim'
       if not os.path.isfile(file): file = self.fbase + '.map'
       i = 0
+      message("Reading tped SNP "+file)
       f = open(file,'r')
       for line in f: i += 1
       f.close()
@@ -95,6 +101,7 @@ class plink:
       self.snpFileHandle = open(file,'r')
 
       file = self.fbase + '.tped'
+      message("Reading tped SNP "+file)
       self.fhandle = open(file,'r')
 
       return self
@@ -103,6 +110,7 @@ class plink:
       # get the number of snps
       file = self.fbase + '.bim'
       i = 0
+      message("Reading SNP BED "+file)
       f = open(file,'r')
       for line in f: i += 1
       f.close()
@@ -114,6 +122,7 @@ class plink:
       self._formatStr = 'c'*self.BytestoRead
 
       file = self.fbase + '.bed'
+      message("Reading SNP BED "+file)
       self.fhandle = open(file,'rb')
 
       magicNumber = self.fhandle.read(2)
@@ -210,6 +219,7 @@ class plink:
       if not os.path.isfile(phenoFile): 
 	 #sys.stderr.write("Could not find phenotype file: %s\n" % (phenoFile))
 	 return
+      message("Reading Phenos "+phenoFile)
       f = open(phenoFile,'r')
       keys = []
       P = []
@@ -239,6 +249,7 @@ class plink:
 
       keys = []
       i = 0
+      message("Reading individuals from family "+famFile)
       f = open(famFile,'r')
       for line in f:
 	 v = line.strip().split()
@@ -301,6 +312,7 @@ class plink:
       return K 
 
    def getCovariatesEMMA(self,emmaFile):
+      message("Reading EMMA cov "+emmaFile)
       f = open(emmaFile,'r')
       P = []
       for line in f:
@@ -314,6 +326,7 @@ class plink:
       if not os.path.isfile(covFile): 
 	 sys.stderr.write("Could not find covariate file: %s\n" % (covFile))
 	 return
+      message("Reading Covariates "+covFile)
       f = open(covFile,'r')
       keys = []
       P = []
