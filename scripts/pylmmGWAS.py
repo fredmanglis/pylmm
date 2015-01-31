@@ -270,6 +270,7 @@ def compute_snp(collect):
    # Check SNPs for missing values
    x = snp[keep].reshape((n,1))  # all the SNPs
    v = np.isnan(x).reshape((-1,))
+   print v
    if v.sum():
       if options.verbose:
          sys.stderr.write("Found missing values in "+str(x))
