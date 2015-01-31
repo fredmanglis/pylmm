@@ -99,6 +99,9 @@ advancedGroup.add_option("--noMean", dest="noMean", default=False,action="store_
 
 basicGroup.add_option("-t", "--nthreads", dest="numThreads", help="maximum number of threads to use")
 
+advancedGroup.add_option("--test",
+                  action="store_true", dest="testing", default=False,
+                  help="Testing mode")
 advancedGroup.add_option("-v", "--verbose",
                   action="store_true", dest="verbose", default=False,
                   help="Print extra info")
@@ -226,6 +229,7 @@ if options.kfile2:
 # PROCESS the phenotype data -- Remove missing phenotype values
 # Keep will now index into the "full" data to select what we keep (either everything or a subset of non missing data
 Y = IN.phenos[:,options.pheno]
+# print np.isnan(Y[40:44])
 v = np.isnan(Y)
 keep = True - v
 if v.sum():
@@ -267,6 +271,8 @@ def compute_snp(collect):
    x = snp[keep].reshape((n,1))  # all the SNPs
    v = np.isnan(x).reshape((-1,))
    if v.sum():
+      if options.verbose:
+         sys.stderr.write("Found missing values in "+str(x))
       keeps = True - v
       xs = x[keeps,:]
       if keeps.sum() <= 1 or xs.var() <= 1e-6: 
@@ -336,7 +342,7 @@ for snp_id in IN:
    if count % 1000 == 0:
       if options.verbose:
          sys.stderr.write("At SNP %d\n" % count)
-      if count>8000 :
+      if options.testing and count>8000 :
          break         # for testing only
    if count % 100 == 0:
       for line in p.imap(compute_snp,collect):
