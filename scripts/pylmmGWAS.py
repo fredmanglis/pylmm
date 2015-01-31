@@ -22,6 +22,10 @@
 #LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 #NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 #SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# Example:
+#
+#   env PYTHONPATH=. python scripts/pylmmGWAS.py -v --bfile data/snps.132k.clean.noX --kfile data/snps.132k.clean.noX.pylmm.kin --phenofile data/snps.132k.clean.noX.fake.phenos out.foo
 
 import pdb
 import time
@@ -332,8 +336,8 @@ for snp_id in IN:
    if count % 1000 == 0:
       if options.verbose:
          sys.stderr.write("At SNP %d\n" % count)
-      # if count>8000 :
-      #    break         # for testing only
+      if count>8000 :
+         break         # for testing only
    if count % 100 == 0:
       for line in p.imap(compute_snp,collect):
          out.write(line)

@@ -31,16 +31,24 @@ from scipy import stats
 
 #np.seterr('raise')
 
+useNumpy=None
+
 def matrixMult(A,B):
+   global useNumpy
 
-   # If there is no fblas then we will revert to np.dot()
-   try:
-      linalg.fblas
-   except AttributeError:
-      sys.stderr.write("WARNING: linalg.fblas not found, using numpy.dot instead!\n")
+   # useNumpy=True
+   
+   if useNumpy==None:
+     try:
+        linalg.fblas
+        sys.stderr.write("Using linalg.fblas\n")
+        useNumpy=False
+     except AttributeError:
+        sys.stderr.write("WARNING: linalg.fblas not found, using numpy.dot instead!\n")
+        useNumpy=True
+
+   if useNumpy:
       return np.dot(A,B)
-
-   sys.stderr.write("Using linalg.fblas\n")
 
    # If the matrices are in Fortran order then the computations will be faster
    # when using dgemm.  Otherwise, the function will copy the matrix and that takes time.
