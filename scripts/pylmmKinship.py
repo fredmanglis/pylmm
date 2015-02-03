@@ -134,7 +134,6 @@ def compute_matrixMult(job,W):
 
 def f_init(q):
     compute_matrixMult.q = q
-
 n = len(IN.indivs)
 # m = options.computeSize
 # jobsize=m
