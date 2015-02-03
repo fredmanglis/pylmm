@@ -267,7 +267,8 @@ if not options.refit:
    if options.verbose and options.kfile2: sys.stderr.write("\t heritability=%0.3f, sigma=%0.3f, w=%0.3f\n" % (L.optH,L.optSigma,L.optW))
 
 def compute_snp(collect):
-   snp,id = collect
+   j,snp_id = collect
+   snp,id = snp_id
    # id = collect[1]
    # result = []
    # Check SNPs for missing values
@@ -284,7 +285,8 @@ def compute_snp(collect):
          # TS.append(np.nan)
          # result.append(formatResult(id,np.nan,np.nan,np.nan,np.nan))
          # continue
-         return formatResult(id,np.nan,np.nan,np.nan,np.nan)
+         compute_snp.q.put([j,formatResult(id,np.nan,np.nan,np.nan,np.nan)])
+         return j
 
       # Its ok to center the genotype -  I used options.normalizeGenotype to 
       # force the removal of missing genotypes as opposed to replacing them with MAF.
@@ -312,15 +314,17 @@ def compute_snp(collect):
          # PS.append(np.nan)
          # TS.append(np.nan)
          # result.append(formatResult(id,np.nan,np.nan,np.nan,np.nan)) # writes nan values
-         return formatResult(id,np.nan,np.nan,np.nan,np.nan)
+         compute_snp.q.put([j,formatResult(id,np.nan,np.nan,np.nan,np.nan)])
+         return j
          # continue
 
       if options.refit:
          L.fit(X=x,REML=options.REML)
       # This is where it happens
       ts,ps,beta,betaVar = L.association(x,REML=options.REML,returnBeta=True)
-   
-   return formatResult(id,beta,np.sqrt(betaVar).sum(),ts,ps)
+
+   compute_snp.q.put([j,formatResult(id,beta,np.sqrt(betaVar).sum(),ts,ps)])
+   return j
    # PS.append(ps)
    # TS.append(ts)
    # return len(result)
@@ -329,6 +333,7 @@ def compute_snp(collect):
 
 def f_init(q):
    compute_snp.q = q
+
 
 # Set up the pool
 # mp.set_start_method('spawn')
@@ -351,12 +356,16 @@ for snp_id in IN:
       if options.testing and count>8000 :
          break         # for testing only
    if count % 100 == 0:
-      for line in p.imap(compute_snp,collect):
+      for j in p.imap(compute_snp,collect):
+         j1,line = q.get()
+         if options.verbose: sys.stderr.write("Job "+str(j)+" finished\n")
          out.write(line)
       collect = []
       
-   collect.append(snp_id)
-for line in p.imap(compute_snp,collect):
+   collect.append((count,snp_id))
+for j in p.imap(compute_snp,collect):
+   j1,line = q.get()
+   if options.verbose: sys.stderr.write("Job "+str(j)+" finished\n")
    out.write(line)
 
 
