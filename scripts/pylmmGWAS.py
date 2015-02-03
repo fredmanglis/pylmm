@@ -128,6 +128,7 @@ import multiprocessing as mp # Multiprocessing is part of the Python stdlib
 import Queue 
 
 matrix_initialize(options.useBLAS)
+cpu_num = mp.cpu_count()
 
 if len(args) != 1:  
    parser.print_help()
@@ -357,19 +358,23 @@ last_j = 0
 for snp_id in IN:
    count += 1
    if count % 1000 == 0:
+      job = count/1000
       if options.verbose:
-         sys.stderr.write("Job %d At SNP %d\n" % (count/1000,count))
-      p.apply_async(compute_snp,(count/1000,collect))
+         sys.stderr.write("Job %d At SNP %d\n" % (job,count))
+      p.apply_async(compute_snp,(job,collect))
       collect = []
-      try:
-         j,lines = q.get_nowait()
-         if options.verbose:
-            sys.stderr.write("Job "+str(j)+" finished\n")
-         for line in lines:
-            out.write(line)
-         completed += 1
-      except Queue.Empty:
-         pass
+      while job > completed + cpu_num + 5:
+         try:
+            j,lines = q.get_nowait()
+            if options.verbose:
+               sys.stderr.write("Job "+str(j)+" finished\n")
+            for line in lines:
+               out.write(line)
+            completed += 1
+         except Queue.Empty:
+            pass
+         if job > completed + cpu_num + 5:
+            time.sleep(1)
       if options.testing and count>8000 :
          break         # for testing only
       
