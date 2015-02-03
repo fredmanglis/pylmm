@@ -98,6 +98,7 @@ advancedGroup.add_option("--noMean", dest="noMean", default=False,action="store_
                   help="This option only applies when --cofile is used.  When covfile is provided, the program will automatically add a global mean covariate to the model unless this option is specified.")
 
 basicGroup.add_option("-t", "--nthreads", dest="numThreads", help="maximum number of threads to use")
+basicGroup.add_option("--blas", action="store_true", default=False, dest="useBLAS", help="Use BLAS instead of numpy matrix multiplication")
 
 advancedGroup.add_option("--test",
                   action="store_true", dest="testing", default=False,
@@ -122,9 +123,12 @@ import numpy as np
 from scipy import linalg
 from pylmm.lmm import LMM
 from pylmm import input
+from pylmm.optmatrix import matrix_initialize
 
 import multiprocessing as mp # Multiprocessing is part of the Python stdlib
 import Queue 
+
+matrix_initialize(options.useBLAS)
 
 if len(args) != 1:  
    parser.print_help()

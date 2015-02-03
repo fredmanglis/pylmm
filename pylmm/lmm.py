@@ -28,45 +28,7 @@ import numpy as np
 from scipy import linalg
 from scipy import optimize
 from scipy import stats
-
-#np.seterr('raise')
-
-useNumpy=None
-
-def matrixMult(A,B):
-   global useNumpy
-
-   # useNumpy=True
-   
-   if useNumpy==None:
-     try:
-        linalg.fblas
-        sys.stderr.write("Using linalg.fblas\n")
-        useNumpy=False
-     except AttributeError:
-        sys.stderr.write("WARNING: linalg.fblas not found, using numpy.dot instead!\n")
-        useNumpy=True
-
-   if useNumpy:
-      return np.dot(A,B)
-
-   # If the matrices are in Fortran order then the computations will be faster
-   # when using dgemm.  Otherwise, the function will copy the matrix and that takes time.
-   if not A.flags['F_CONTIGUOUS']:
-      AA = A.T
-      transA = True
-   else:
-      AA = A
-      transA = False
-
-   if not B.flags['F_CONTIGUOUS']:
-      BB = B.T
-      transB = True
-   else:
-      BB = B
-      transB = False
-
-   return linalg.fblas.dgemm(alpha=1.,a=AA,b=BB,trans_a=transA,trans_b=transB)
+from pylmm.optmatrix import matrixMult
 
 def calculateKinship(W,center=False):
       """
