@@ -48,3 +48,8 @@ def matrixMult(A,B):
       transB = False
 
    return linalg.fblas.dgemm(alpha=1.,a=AA,b=BB,trans_a=transA,trans_b=transB)
+
+def matrixMultT(M):
+    # res = np.dot(W,W.T)
+    # return linalg.fblas.dgemm(alpha=1.,a=M.T,b=M.T,trans_a=True,trans_b=False)
+    return matrixMult(M,M.T)

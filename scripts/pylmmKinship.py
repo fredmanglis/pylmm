@@ -83,7 +83,7 @@ from pylmm import input
 import multiprocessing as mp # Multiprocessing is part of the Python stdlib
 import Queue 
 
-from pylmm.optmatrix import matrix_initialize
+from pylmm.optmatrix import matrix_initialize, matrixMultT
 matrix_initialize(options.useBLAS)
 
 
@@ -128,12 +128,7 @@ def compute_matrixMult(job,W):
 
    For every set of SNPs matrixMult is used to multiply matrices T(W)*W
    """
-   res = None
-   # res = matrixMult(W,W.T)
-   if options.useBLAS:
-      res = linalg.fblas.matrixMult(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
-   else:
-      res = np.dot(W,W.T)
+   res = matrixMultT(W)
    compute_matrixMult.q.put([job,res])
    return job
 
