@@ -26,10 +26,9 @@ def matrix_initialize(useBLAS):
         useNumpy=True
         
 def matrixMult(A,B):
-    global useNumpy  # module based variable
+   global useNumpy  # module based variable
 
    if useNumpy:
-       print "."
        return np.dot(A,B)
 
    # If the matrices are in Fortran order then the computations will be faster

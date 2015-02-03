@@ -25,7 +25,7 @@
 #
 # Example:
 #
-#   env PYTHONPATH=. python scripts/pylmmKinship.py -v --bfile data/test_snps.132k.clean.noX out.kin
+#   /usr/bin/time -v env PYTHONPATH=. python scripts/pylmmKinship.py -v --bfile data/test_snps.132k.clean.noX out.kin
 
 
 import sys
@@ -57,6 +57,9 @@ basicGroup.add_option("-n", default=1000,dest="computeSize", type="int", help="T
 basicGroup.add_option("-t", "--nthreads", dest="numThreads", help="maximum number of threads to use")
 basicGroup.add_option("--blas", action="store_true", default=False, dest="useBLAS", help="Use BLAS instead of numpy matrix multiplication")
 
+basicGroup.add_option("--test",
+                  action="store_true", dest="testing", default=False,
+                  help="Testing mode")
 basicGroup.add_option("-v", "--verbose",
                   action="store_true", dest="verbose", default=False,
                   help="Print extra info")
@@ -79,6 +82,10 @@ from pylmm.lmm import calculateKinship
 from pylmm import input
 import multiprocessing as mp # Multiprocessing is part of the Python stdlib
 import Queue 
+
+from pylmm.optmatrix import matrix_initialize
+matrix_initialize(options.useBLAS)
+
 
 if not options.tfile and not options.bfile and not options.emmaFile: 
    parser.error("You must provide at least one PLINK input file base (--tfile or --bfile) or an emma formatted file (--emmaSNP).")
@@ -115,22 +122,23 @@ def compute_W(job):
       W[:,j] = snp  # set row to list of SNPs
    return W
 
-def compute_dgemm(job,W):
+def compute_matrixMult(job,W):
    """
    Compute Kinship(W)*j
 
-   For every set of SNPs dgemm is used to multiply matrices T(W)*W
+   For every set of SNPs matrixMult is used to multiply matrices T(W)*W
    """
    res = None
+   # res = matrixMult(W,W.T)
    if options.useBLAS:
-      res = linalg.fblas.dgemm(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
+      res = linalg.fblas.matrixMult(alpha=1.,a=W.T,b=W.T,trans_a=True,trans_b=False)
    else:
       res = np.dot(W,W.T)
-   compute_dgemm.q.put([job,res])
+   compute_matrixMult.q.put([job,res])
    return job
 
 def f_init(q):
-    compute_dgemm.q = q
+    compute_matrixMult.q = q
 
 n = len(IN.indivs)
 # m = options.computeSize
@@ -139,14 +147,12 @@ n = len(IN.indivs)
 IN.getSNPIterator()
 # Annoying hack to get around the fact that it is expensive to determine the number of SNPs in an emma file
 if options.emmaFile: IN.numSNPs = options.numSNPs
-# i = 0
 
-if options.useBLAS:
-   sys.stderr.write("Using BLAS...\n")
-# mp.set_start_method('spawn')
 q = mp.Queue()
 p = mp.Pool(numThreads, f_init, [q])
 iterations = IN.numSNPs/options.computeSize+1
+if options.testing:
+  iterations = 8
 # jobs = range(0,8) # range(0,iterations)
 
 results = []
@@ -155,12 +161,12 @@ K = np.zeros((n,n))  # The Kinship matrix has dimension individuals x individual
 
 completed = 0
 
-# for job in range(8):
+  
 for job in range(iterations):
    if options.verbose:
       sys.stderr.write("Processing job %d first %d SNPs\n" % (job, ((job+1)*options.computeSize)))
    W = compute_W(job)
-   results.append(p.apply_async(compute_dgemm, (job,W)))   
+   results.append(p.apply_async(compute_matrixMult, (job,W)))   
    # Do we have a result?
    try: 
      j,x = q.get_nowait()

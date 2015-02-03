@@ -120,7 +120,6 @@ parser.add_option_group(experimentalGroup)
 import sys
 import os
 import numpy as np
-from scipy import linalg
 from pylmm.lmm import LMM
 from pylmm import input
 from pylmm.optmatrix import matrix_initialize
