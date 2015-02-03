@@ -266,70 +266,72 @@ if not options.refit:
    if options.verbose and not options.kfile2: sys.stderr.write("\t heritability=%0.3f, sigma=%0.3f\n" % (L.optH,L.optSigma))
    if options.verbose and options.kfile2: sys.stderr.write("\t heritability=%0.3f, sigma=%0.3f, w=%0.3f\n" % (L.optH,L.optSigma,L.optW))
 
-def compute_snp(collect):
-   j,snp_id = collect
-   snp,id = snp_id
-   # id = collect[1]
-   # result = []
-   # Check SNPs for missing values
-   x = snp[keep].reshape((n,1))  # all the SNPs
-   v = np.isnan(x).reshape((-1,))
-   if v.sum():
-      # NOTE: this code appears to be unreachable!
-      if options.verbose:
-         sys.stderr.write("Found missing values in "+str(x))
-      keeps = True - v
-      xs = x[keeps,:]
-      if keeps.sum() <= 1 or xs.var() <= 1e-6: 
-         # PS.append(np.nan)
-         # TS.append(np.nan)
-         # result.append(formatResult(id,np.nan,np.nan,np.nan,np.nan))
-         # continue
-         compute_snp.q.put([j,formatResult(id,np.nan,np.nan,np.nan,np.nan)])
-         return j
+def compute_snp(snp_ids):
+   for snp_id in snp_ids:
+      j = -1
+      # j,snp_id = collect
+      snp,id = snp_id
+      # id = collect[1]
+      # result = []
+      # Check SNPs for missing values
+      x = snp[keep].reshape((n,1))  # all the SNPs
+      v = np.isnan(x).reshape((-1,))
+      if v.sum():
+         # NOTE: this code appears to be unreachable!
+         if options.verbose:
+            sys.stderr.write("Found missing values in "+str(x))
+         keeps = True - v
+         xs = x[keeps,:]
+         if keeps.sum() <= 1 or xs.var() <= 1e-6: 
+            # PS.append(np.nan)
+            # TS.append(np.nan)
+            # result.append(formatResult(id,np.nan,np.nan,np.nan,np.nan))
+            # continue
+            compute_snp.q.put([j,formatResult(id,np.nan,np.nan,np.nan,np.nan)])
+            return j
 
-      # Its ok to center the genotype -  I used options.normalizeGenotype to 
-      # force the removal of missing genotypes as opposed to replacing them with MAF.
-      if not options.normalizeGenotype:
-         xs = (xs - xs.mean()) / np.sqrt(xs.var())
-      Ys = Y[keeps]
-      X0s = X0[keeps,:]
-      Ks = K[keeps,:][:,keeps]
-      if options.kfile2:
-         K2s = K2[keeps,:][:,keeps]
-         Ls = LMM_withK2(Ys,Ks,X0=X0s,verbose=options.verbose,K2=K2s)
+         # Its ok to center the genotype -  I used options.normalizeGenotype to 
+         # force the removal of missing genotypes as opposed to replacing them with MAF.
+         if not options.normalizeGenotype:
+            xs = (xs - xs.mean()) / np.sqrt(xs.var())
+         Ys = Y[keeps]
+         X0s = X0[keeps,:]
+         Ks = K[keeps,:][:,keeps]
+         if options.kfile2:
+            K2s = K2[keeps,:][:,keeps]
+            Ls = LMM_withK2(Ys,Ks,X0=X0s,verbose=options.verbose,K2=K2s)
+         else:
+            Ls = LMM(Ys,Ks,X0=X0s,verbose=options.verbose)
+         if options.refit:
+           Ls.fit(X=xs,REML=options.REML)
+         else:
+            #try:
+            Ls.fit(REML=options.REML)
+            #except: pdb.set_trace()
+         ts,ps,beta,betaVar = Ls.association(xs,REML=options.REML,returnBeta=True)
       else:
-         Ls = LMM(Ys,Ks,X0=X0s,verbose=options.verbose)
-      if options.refit:
-        Ls.fit(X=xs,REML=options.REML)
-      else:
-         #try:
-         Ls.fit(REML=options.REML)
-         #except: pdb.set_trace()
-      ts,ps,beta,betaVar = Ls.association(xs,REML=options.REML,returnBeta=True)
-   else:
-      if x.var() == 0:
-         # Note: this code appears to be unreachable!
-         
-         # PS.append(np.nan)
-         # TS.append(np.nan)
-         # result.append(formatResult(id,np.nan,np.nan,np.nan,np.nan)) # writes nan values
-         compute_snp.q.put([j,formatResult(id,np.nan,np.nan,np.nan,np.nan)])
-         return j
-         # continue
+         if x.var() == 0:
+            # Note: this code appears to be unreachable!
 
-      if options.refit:
-         L.fit(X=x,REML=options.REML)
-      # This is where it happens
-      ts,ps,beta,betaVar = L.association(x,REML=options.REML,returnBeta=True)
+            # PS.append(np.nan)
+            # TS.append(np.nan)
+            # result.append(formatResult(id,np.nan,np.nan,np.nan,np.nan)) # writes nan values
+            compute_snp.q.put([j,formatResult(id,np.nan,np.nan,np.nan,np.nan)])
+            return j
+            # continue
 
-   compute_snp.q.put([j,formatResult(id,beta,np.sqrt(betaVar).sum(),ts,ps)])
-   return j
-   # PS.append(ps)
-   # TS.append(ts)
-   # return len(result)
-   # compute.q.put(result)
-   # return None
+         if options.refit:
+            L.fit(X=x,REML=options.REML)
+         # This is where it happens
+         ts,ps,beta,betaVar = L.association(x,REML=options.REML,returnBeta=True)
+
+      compute_snp.q.put([j,formatResult(id,beta,np.sqrt(betaVar).sum(),ts,ps)])
+      return j
+      # PS.append(ps)
+      # TS.append(ts)
+      # return len(result)
+      # compute.q.put(result)
+      # return None
 
 def f_init(q):
    compute_snp.q = q
@@ -362,7 +364,7 @@ for snp_id in IN:
          out.write(line)
       collect = []
       
-   collect.append((count,snp_id))
+   collect.append([snp_id])
 for j in p.imap(compute_snp,collect):
    j1,line = q.get()
    if options.verbose: sys.stderr.write("Job "+str(j)+" finished\n")
