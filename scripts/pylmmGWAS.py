@@ -267,8 +267,8 @@ if not options.refit:
    if options.verbose and options.kfile2: sys.stderr.write("\t heritability=%0.3f, sigma=%0.3f, w=%0.3f\n" % (L.optH,L.optSigma,L.optW))
 
 def compute_snp(collect):
-   snp = collect[0]
-   id = collect[1]
+   snp,id = collect
+   # id = collect[1]
    # result = []
    # Check SNPs for missing values
    x = snp[keep].reshape((n,1))  # all the SNPs
