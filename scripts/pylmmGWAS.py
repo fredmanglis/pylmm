@@ -267,7 +267,7 @@ if not options.refit:
    if options.verbose and not options.kfile2: sys.stderr.write("\t heritability=%0.3f, sigma=%0.3f\n" % (L.optH,L.optSigma))
    if options.verbose and options.kfile2: sys.stderr.write("\t heritability=%0.3f, sigma=%0.3f, w=%0.3f\n" % (L.optH,L.optSigma,L.optW))
 
-def compute_snp(j,snp_ids):
+def compute_snp(j,snp_ids,q = None):
    # print(j,len(snp_ids),"\n")
    result = []
    for snp_id in snp_ids:
@@ -328,7 +328,9 @@ def compute_snp(j,snp_ids):
       result.append(formatResult(id,beta,np.sqrt(betaVar).sum(),ts,ps))
       # compute_snp.q.put([j,formatResult(id,beta,np.sqrt(betaVar).sum(),ts,ps)])
    # print [j,result[0]]," in result queue\n"
-   compute_snp.q.put([j,result])
+   if not q:
+      q = compute_snp.q
+   q.put([j,result])
    return j
       # PS.append(ps)
       # TS.append(ts)
@@ -361,32 +363,44 @@ for snp_id in IN:
       job = count/1000
       if options.verbose:
          sys.stderr.write("Job %d At SNP %d\n" % (job,count))
-      p.apply_async(compute_snp,(job,collect))
-      collect = []
-      while job > completed + cpu_num + 5:
-         try:
-            j,lines = q.get_nowait()
-            if options.verbose:
-               sys.stderr.write("Job "+str(j)+" finished\n")
-            for line in lines:
-               out.write(line)
-            completed += 1
-         except Queue.Empty:
-            pass
-         if job > completed + cpu_num + 5:
-            time.sleep(1)
+      if numThreads == 1:
+         compute_snp(job,collect,q)
+         collect = []
+         j,lines = q.get()
+         if options.verbose:
+            sys.stderr.write("Job "+str(j)+" finished\n")
+         for line in lines:
+            out.write(line)
+      else:
+         p.apply_async(compute_snp,(job,collect))
+         collect = []
+         while job > completed:
+            try:
+               j,lines = q.get_nowait()
+               if options.verbose:
+                  sys.stderr.write("Job "+str(j)+" finished\n")
+               for line in lines:
+                  out.write(line)
+               completed += 1
+            except Queue.Empty:
+               pass
+            if job > completed + cpu_num + 5:
+               time.sleep(1)
+            else:
+               if job >= completed:
+                 break
       if options.testing and count>8000 :
          break         # for testing only
       
    collect.append(snp_id)
 
-# print count/1000,completed
-for job in range(int(count/1000)-completed):
-   j,lines = q.get()
-   if options.verbose:
-      sys.stderr.write("Job "+str(j)+" finished\n")
-   for line in lines:
-      out.write(line)
+if not numThreads or numThreads > 1:
+   for job in range(int(count/1000)-completed):
+      j,lines = q.get()
+      if options.verbose:
+         sys.stderr.write("Job "+str(j)+" finished\n")
+      for line in lines:
+         out.write(line)
 
 
 
