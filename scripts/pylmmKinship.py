@@ -180,7 +180,7 @@ for job in range(iterations):
       except Queue.Empty:
          pass
 
-if numThreads > 1:
+if numThreads == None or numThreads > 1:
    for job in range(len(results)-completed):
       j,x = q.get()
       if options.verbose: sys.stderr.write("Job "+str(j)+" finished\n")
