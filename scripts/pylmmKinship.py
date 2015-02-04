@@ -122,18 +122,20 @@ def compute_W(job):
       W[:,j] = snp  # set row to list of SNPs
    return W
 
-def compute_matrixMult(job,W):
+def compute_matrixMult(job,W,q = None):
    """
    Compute Kinship(W)*j
 
    For every set of SNPs matrixMult is used to multiply matrices T(W)*W
    """
    res = matrixMultT(W)
-   compute_matrixMult.q.put([job,res])
+   if not q: q=compute_matrixMult.q
+   q.put([job,res])
    return job
 
 def f_init(q):
     compute_matrixMult.q = q
+
 n = len(IN.indivs)
 # m = options.computeSize
 # jobsize=m
@@ -154,30 +156,37 @@ results = []
 K = np.zeros((n,n))  # The Kinship matrix has dimension individuals x individuals
 
 completed = 0
-
-  
 for job in range(iterations):
    if options.verbose:
       sys.stderr.write("Processing job %d first %d SNPs\n" % (job, ((job+1)*options.computeSize)))
    W = compute_W(job)
-   results.append(p.apply_async(compute_matrixMult, (job,W)))   
-   # Do we have a result?
-   try: 
-     j,x = q.get_nowait()
-     if options.verbose: sys.stderr.write("Job "+str(j)+" finished\n")
-     K_j = x
-     # print j,K_j[:,0]
-     K = K + K_j
-     completed += 1
-   except Queue.Empty:
-     pass
+   if numThreads == 1:
+      compute_matrixMult(job,W,q)
+      j,x = q.get()
+      if options.verbose: sys.stderr.write("Job "+str(j)+" finished\n")
+      K_j = x
+      # print j,K_j[:,0]
+      K = K + K_j
+   else:
+      results.append(p.apply_async(compute_matrixMult, (job,W)))
+      # Do we have a result?
+      try: 
+         j,x = q.get_nowait()
+         if options.verbose: sys.stderr.write("Job "+str(j)+" finished\n")
+         K_j = x
+         # print j,K_j[:,0]
+         K = K + K_j
+         completed += 1
+      except Queue.Empty:
+         pass
 
-for job in range(len(results)-completed):
-   j,x = q.get()
-   if options.verbose: sys.stderr.write("Job "+str(j)+" finished\n")
-   K_j = x
-   # print j,K_j[:,0]
-   K = K + K_j
+if numThreads > 1:
+   for job in range(len(results)-completed):
+      j,x = q.get()
+      if options.verbose: sys.stderr.write("Job "+str(j)+" finished\n")
+      K_j = x
+      # print j,K_j[:,0]
+      K = K + K_j
         
 K = K / float(IN.numSNPs)
 if options.verbose: sys.stderr.write("Saving Kinship file to %s\n" % outFile)
