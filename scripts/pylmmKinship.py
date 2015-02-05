@@ -77,7 +77,6 @@ outFile = args[0]
 import sys
 import os
 import numpy as np
-from scipy import linalg
 from pylmm.lmm import calculateKinship
 from pylmm import input
 import multiprocessing as mp # Multiprocessing is part of the Python stdlib
@@ -182,7 +181,7 @@ for job in range(iterations):
 
 if numThreads == None or numThreads > 1:
    for job in range(len(results)-completed):
-      j,x = q.get()
+      j,x = q.get(True,15)
       if options.verbose: sys.stderr.write("Job "+str(j)+" finished\n")
       K_j = x
       # print j,K_j[:,0]

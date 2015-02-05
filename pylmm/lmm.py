@@ -25,9 +25,8 @@
 import sys
 import time
 import numpy as np
-from scipy import linalg
-from scipy import optimize
-from scipy import stats
+from scipy.linalg import eigh, inv, det
+import scipy.stats as stats # t-tests
 from pylmm.optmatrix import matrixMult
 
 def calculateKinship(W,center=False):
@@ -184,7 +183,7 @@ class LMM:
       if len(Kva) == 0 or len(Kve) == 0:
 	 if self.verbose: sys.stderr.write("Obtaining eigendecomposition for %dx%d matrix\n" % (K.shape[0],K.shape[1]) )
 	 begin = time.time()
-	 Kva,Kve = linalg.eigh(K)
+	 Kva,Kve = eigh(K)
 	 end = time.time()
 	 if self.verbose: sys.stderr.write("Total time: %0.3f\n" % (end - begin))
       
@@ -227,7 +226,7 @@ class LMM:
       S = 1.0/(h*self.Kva + (1.0 - h))
       Xt = X.T*S
       XX = matrixMult(Xt,X)
-      XX_i = linalg.inv(XX)
+      XX_i = inv(XX)
       beta =  matrixMult(matrixMult(XX_i,Xt),self.Yt)
       Yt = self.Yt - matrixMult(X,beta)
       Q = np.dot(Yt.T*S,Yt)
@@ -261,7 +260,7 @@ class LMM:
       LL = -0.5 * LL
 
       if REML:
-	 LL_REML_part = q*np.log(2.0*np.pi*sigma) + np.log(linalg.det(matrixMult(X.T,X))) - np.log(linalg.det(XX))
+	 LL_REML_part = q*np.log(2.0*np.pi*sigma) + np.log(det(matrixMult(X.T,X))) - np.log(det(XX))
 	 LL = LL + 0.5*LL_REML_part
 
 
@@ -280,7 +279,7 @@ class LMM:
       n = len(self.LLs)
       HOpt = []
       for i in range(1,n-2):
-          if self.LLs[i-1] < self.LLs[i] and self.LLs[i] > self.LLs[i+1]: 
+          if self.LLs[i-1] < self.LLs[i] and self.LLs[i] > self.LLs[i+1]:
 	    HOpt.append(optimize.brent(self.LL_brent,args=(X,REML),brack=(H[i-1],H[i+1])))
 	    if np.isnan(HOpt[-1]): HOpt[-1] = H[i-1]
 	    #if np.isnan(HOpt[-1]): HOpt[-1] = self.LLs[i-1]
@@ -292,6 +291,7 @@ class LMM:
       elif len(HOpt) == 1: return HOpt[0]
       elif self.LLs[0] > self.LLs[n-1]: return H[0]
       else: return H[n-1]
+
 
    def fit(self,X=None,ngrids=100,REML=True):
 

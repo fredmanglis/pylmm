@@ -3,8 +3,8 @@ import time
 import numpy as np
 from numpy.distutils.system_info import get_info;
 from scipy import linalg
-# from scipy import optimize
-# from scipy import stats
+from scipy import optimize
+from scipy import stats
 
 useNumpy = None
 hasBLAS = None

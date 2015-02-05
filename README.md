@@ -27,7 +27,3 @@ You can also clone the repository and do a manual install.
    git clone https://github.com/nickFurlotte/pylmm
    python setup.py install
 ```
-
-
-
-

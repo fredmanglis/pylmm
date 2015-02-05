@@ -396,7 +396,7 @@ for snp_id in IN:
 
 if not numThreads or numThreads > 1:
    for job in range(int(count/1000)-completed):
-      j,lines = q.get()
+      j,lines = q.get(True,15) # time out
       if options.verbose:
          sys.stderr.write("Job "+str(j)+" finished\n")
       for line in lines:
