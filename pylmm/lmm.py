@@ -66,7 +66,7 @@ def GWAS(Y, X, K, Kva=[], Kve=[], X0=None, REML=True, refit=False):
         per SNP and re-computing the eigen-decomp
 
 	Y - n x 1 phenotype vector 
-        X - n x m SNP matrix
+        X - n x m SNP matrix (genotype matrix)
 	K - n x n kinship matrix
         Kva,Kve = linalg.eigh(K) - or the eigen vectors and values for K
         X0 - n x q covariate matrix
@@ -76,6 +76,9 @@ def GWAS(Y, X, K, Kva=[], Kve=[], X0=None, REML=True, refit=False):
       """
       n = X.shape[0]
       m = X.shape[1]
+      prins("Initialize GWAS")
+      print("genotype matrix n is:", n)
+      print("genotype matrix m is:", m)
 
       if X0 == None: 
          X0 = np.ones((n,1))
@@ -158,8 +161,8 @@ class LMM:
    def __init__(self,Y,K,Kva=[],Kve=[],X0=None,verbose=False):
 
       """
-      The constructor takes a phenotype vector or array of size n.
-      It takes a kinship matrix of size n x n.  Kva and Kve can be computed as Kva,Kve = linalg.eigh(K) and cached.
+      The constructor takes a phenotype vector or array Y of size n.
+      It takes a kinship matrix K of size n x n.  Kva and Kve can be computed as Kva,Kve = linalg.eigh(K) and cached.
       If they are not provided, the constructor will calculate them.
       X0 is an optional covariate matrix of size n x q, where there are q covariates.
       When this parameter is not provided, the constructor will set X0 to an n x 1 matrix of all ones to represent a mean effect.

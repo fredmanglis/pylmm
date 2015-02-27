@@ -77,6 +77,7 @@ outFile = args[0]
 import sys
 import os
 import numpy as np
+from scipy import linalg 
 from pylmm.lmm import calculateKinship
 from pylmm import input
 import multiprocessing as mp # Multiprocessing is part of the Python stdlib
@@ -192,7 +193,8 @@ if options.verbose: sys.stderr.write("Saving Kinship file to %s\n" % outFile)
 np.savetxt(outFile,K)
 
 if options.saveEig:
-   if options.verbose: sys.stderr.write("Obtaining Eigendecomposition\n")
+   if options.verbose:
+      sys.stderr.write("Obtaining eigendecomposition for %dx%d matrix\n" % (K.shape[0],K.shape[1]) )
    Kva,Kve = linalg.eigh(K)
    if options.verbose: sys.stderr.write("Saving eigendecomposition to %s.[kva | kve]\n" % outFile)
    np.savetxt(outFile+".kva",Kva)
