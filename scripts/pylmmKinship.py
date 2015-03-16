@@ -146,6 +146,7 @@ if options.emmaFile: IN.numSNPs = options.numSNPs
 
 q = mp.Queue()
 p = mp.Pool(numThreads, f_init, [q])
+print IN.numSNPs
 iterations = IN.numSNPs/options.computeSize+1
 if options.testing:
   iterations = 8
@@ -187,8 +188,10 @@ if numThreads == None or numThreads > 1:
       K_j = x
       # print j,K_j[:,0]
       K = K + K_j
-        
+
 K = K / float(IN.numSNPs)
+print K.shape, K
+
 if options.verbose: sys.stderr.write("Saving Kinship file to %s\n" % outFile)
 np.savetxt(outFile,K)
 
