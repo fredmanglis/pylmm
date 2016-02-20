@@ -27,3 +27,5 @@ You can also clone the repository and do a manual install.
    git clone https://github.com/nickFurlotte/pylmm
    python setup.py install
 ```
+
+pylmm is offered under the GNU Affero GPL (https://www.gnu.org/licenses/why-affero-gpl.html).
