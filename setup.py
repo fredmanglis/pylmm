@@ -9,5 +9,5 @@ setup(
       url = "https://github.com/nickFurlotte/pylmm",
       description = 'pyLMM is a lightweight linear mixed model solver for use in GWAS.',
       packages=['pylmm'],
-      scripts=['scripts/pylmmGWAS.py','scripts/pylmmKinship.py'],
+      scripts=['scripts/pylmmGWAS.py','scripts/pylmmKinship.py','scripts/pylmm_redis'],
     )

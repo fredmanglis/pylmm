@@ -1,0 +1,13 @@
+#! /bin/bash
+#
+#  Small wrapper for calling pylmm from GN2. This will work
+#  when running pylmm from a checked out git repo.
+#
+#  Note this version uses Redis to pass in data
+#
+#  GNU Guix replaces PACKAGEDIR to point at the Guix store.
+
+SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PACKAGEDIR=$(dirname $SCRIPTDIR)
+echo $PACKAGEDIR
+/usr/bin/python $PACKAGEDIR/pylmm_gn2/lmm.py $*
