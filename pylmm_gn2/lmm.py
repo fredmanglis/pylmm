@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import, print_function, division
+
 
 import sys
 import time
@@ -735,7 +735,7 @@ class LMM:
             self.X0t_stack[:,(self.q)] = matrixMult(self.Kve.T,X)[:,0]
             X = self.X0t_stack
   
-        H = np.array(range(ngrids)) / float(ngrids)
+        H = np.array(list(range(ngrids))) / float(ngrids)
         L = np.array([self.LL(h,X,stack=False,REML=REML)[0] for h in H])
         self.LLs = L
   

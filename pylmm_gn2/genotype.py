@@ -26,7 +26,7 @@ def replace_missing_with_MAF(snp_g):
     in the snp row. It is rather slow!
     """
     cnt = Counter(snp_g)
-    tuples = sorted(cnt.items(), key=operator.itemgetter(1))
+    tuples = sorted(list(cnt.items()), key=operator.itemgetter(1))
     l2 = [t for t in tuples if not np.isnan(t[0])]
     maf = l2[0][0]
     res = np.array([maf if np.isnan(snp) else snp for snp in snp_g])

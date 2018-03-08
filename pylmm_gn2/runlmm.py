@@ -19,7 +19,7 @@
 
 from optparse import OptionParser
 import sys
-import tsvreader
+from . import tsvreader
 import numpy as np
 
 # Add local dir to PYTHONPATH
@@ -29,11 +29,11 @@ if sys.path[0] != cwd:
     sys.path.insert(1,cwd)
 
 # pylmm modules
-from lmm import gn2_load_redis, gn2_load_redis_iter, calculate_kinship_new, run_gwas
-from kinship import kinship, kinship_full
-import genotype
-import phenotype
-from standalone import uses
+from .lmm import gn2_load_redis, gn2_load_redis_iter, calculate_kinship_new, run_gwas
+from .kinship import kinship, kinship_full
+from . import genotype
+from . import phenotype
+from .standalone import uses
 
 progress,mprint,debug,info,fatal = uses('progress','mprint','debug','info','fatal')
 
@@ -91,11 +91,11 @@ parser.add_option("--test-kinship",
 (options, args) = parser.parse_args()
 
 if len(args) != 1:
-    print usage
+    print(usage)
     sys.exit(1)
 
 cmd = args[0]
-print "Command: ",cmd
+print("Command: ",cmd)
 
 k = None
 y = None
@@ -103,19 +103,19 @@ g = None
 
 if options.kinship:
     k = tsvreader.kinship(options.kinship)
-    print k.shape
+    print(k.shape)
 
 if options.pheno:
     y = tsvreader.pheno(options.pheno)
-    print y.shape
+    print(y.shape)
 
 if options.geno and cmd != 'iterator':
     g = tsvreader.geno(options.geno)
-    print g.shape
+    print(g.shape)
 
 def check_results(ps,ts):
-    print np.array(ps)
-    print len(ps),sum(ps)
+    print(np.array(ps))
+    print(len(ps),sum(ps))
     p1 = round(ps[0],4)
     p2 = round(ps[-1],4)
     if options.geno == 'data/small.geno':
@@ -155,7 +155,7 @@ elif cmd == 'redis_new':
         raise Exception('Can not use --remove-missing-phenotypes with LMM2')
     Y = y
     G = g
-    print "Original G",G.shape, "\n", G
+    print("Original G",G.shape, "\n", G)
     # gt = G.T
     # G = None
     ps, ts = gn2_load_redis('testrun','other',k,Y,G,new_code=True)
@@ -163,17 +163,17 @@ elif cmd == 'redis_new':
 elif cmd == 'redis':
     # Emulating the redis setup of GN2
     G = g
-    print "Original G",G.shape, "\n", G
+    print("Original G",G.shape, "\n", G)
     if y is not None and options.remove_missing_phenotypes:
         gnt = np.array(g).T
         n,Y,g,keep = phenotype.remove_missing(n,y,gnt)
         G = g.T
-        print "Removed missing phenotypes",G.shape, "\n", G
+        print("Removed missing phenotypes",G.shape, "\n", G)
     else:
         Y = y
     if options.maf_normalization:
         G = np.apply_along_axis( genotype.replace_missing_with_MAF, axis=0, arr=g )
-        print "MAF replacements: \n",G
+        print("MAF replacements: \n",G)
     if options.genotype_normalization:
         G = np.apply_along_axis( genotype.normalize, axis=1, arr=G)
     g = None
@@ -185,15 +185,15 @@ elif cmd == 'redis':
     check_results(ps,ts)
 elif cmd == 'kinship':
     G = g
-    print "Original G",G.shape, "\n", G
+    print("Original G",G.shape, "\n", G)
     if y != None and options.remove_missing_phenotypes:
         gnt = np.array(g).T
         n,Y,g,keep = phenotype.remove_missing(n,y,g.T)
         G = g.T
-        print "Removed missing phenotypes",G.shape, "\n", G
+        print("Removed missing phenotypes",G.shape, "\n", G)
     if options.maf_normalization:
         G = np.apply_along_axis( genotype.replace_missing_with_MAF, axis=0, arr=g )
-        print "MAF replacements: \n",G
+        print("MAF replacements: \n",G)
     if options.genotype_normalization:
         G = np.apply_along_axis( genotype.normalize, axis=1, arr=G)
     g = None
@@ -201,17 +201,17 @@ elif cmd == 'kinship':
 
     if options.test_kinship:
         K = kinship_full(np.copy(G))
-        print "Genotype",G.shape, "\n", G
-        print "first Kinship method",K.shape,"\n",K
+        print("Genotype",G.shape, "\n", G)
+        print("first Kinship method",K.shape,"\n",K)
         k1 = round(K[0][0],4)
         K2,G = calculate_kinship_new(np.copy(G))
-        print "Genotype",G.shape, "\n", G
-        print "GN2 Kinship method",K2.shape,"\n",K2
+        print("Genotype",G.shape, "\n", G)
+        print("GN2 Kinship method",K2.shape,"\n",K2)
         k2 = round(K2[0][0],4)
     
-    print "Genotype",G.shape, "\n", G
+    print("Genotype",G.shape, "\n", G)
     K3 = kinship(G)
-    print "third Kinship method",K3.shape,"\n",K3
+    print("third Kinship method",K3.shape,"\n",K3)
     sys.stderr.write(options.geno+"\n")
     k3 = round(K3[0][0],4)
     if options.geno == 'data/small.geno':

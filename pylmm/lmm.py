@@ -70,8 +70,8 @@ def GWAS(Y, X, K, Kva=[], Kve=[], X0=None, REML=True, refit=False):
       n = X.shape[0]
       m = X.shape[1]
       prins("Initialize GWAS")
-      print("genotype matrix n is:", n)
-      print("genotype matrix m is:", m)
+      print(("genotype matrix n is:", n))
+      print(("genotype matrix m is:", m))
 
       if X0 == None: 
          X0 = np.ones((n,1))
@@ -306,7 +306,7 @@ class LMM:
 	 self.X0t_stack[:,(self.q)] = matrixMult(self.Kve.T,X)[:,0]
 	 X = self.X0t_stack
 
-      H = np.array(range(ngrids)) / float(ngrids)
+      H = np.array(list(range(ngrids))) / float(ngrids)
       L = np.array([self.LL(h,X,stack=False,REML=REML)[0] for h in H])
       self.LLs = L
 

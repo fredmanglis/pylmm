@@ -16,14 +16,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import print_function
+
 from optparse import OptionParser
 import sys
 import os
 import numpy as np
 # from lmm import LMM, run_other
 # import input
-import plink
+from . import plink
 
 usage = """
 python convertlmm.py [--plink] [--prefix out_basename] [--kinship kfile] [--pheno pname] [--geno gname]

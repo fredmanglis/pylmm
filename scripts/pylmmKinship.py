@@ -69,7 +69,7 @@ from scipy import linalg
 from pylmm.lmm import calculateKinship
 from pylmm import input
 import multiprocessing as mp # Multiprocessing is part of the Python stdlib
-import Queue 
+import queue 
 
 from pylmm.optmatrix import matrix_initialize, matrixMultT
 matrix_initialize(options.useBLAS)
@@ -102,9 +102,9 @@ def compute_W(job):
    for j in range(0,options.computeSize):
       row = job*m + j
       if row >= IN.numSNPs:
-         W = W[:,range(0,j)]
+         W = W[:,list(range(0,j))]
          break
-      snp,id = IN.next()  # 0<=snp<=1.0
+      snp,id = next(IN)  # 0<=snp<=1.0
       if snp.var() == 0:
          continue
       W[:,j] = snp  # set row to list of SNPs
@@ -134,7 +134,7 @@ if options.emmaFile: IN.numSNPs = options.numSNPs
 
 q = mp.Queue()
 p = mp.Pool(numThreads, f_init, [q])
-print IN.numSNPs
+print(IN.numSNPs)
 iterations = IN.numSNPs/options.computeSize+1
 if options.testing:
   iterations = 8
@@ -166,7 +166,7 @@ for job in range(iterations):
          # print j,K_j[:,0]
          K = K + K_j
          completed += 1
-      except Queue.Empty:
+      except queue.Empty:
          pass
 
 if numThreads == None or numThreads > 1:
@@ -178,7 +178,7 @@ if numThreads == None or numThreads > 1:
       K = K + K_j
 
 K = K / float(IN.numSNPs)
-print K.shape, K
+print(K.shape, K)
 
 if options.verbose: sys.stderr.write("Saving Kinship file to %s\n" % outFile)
 np.savetxt(outFile,K)

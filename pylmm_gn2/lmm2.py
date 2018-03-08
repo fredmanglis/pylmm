@@ -21,8 +21,8 @@ import numpy as np
 from scipy.linalg import eigh, inv, det
 import scipy.stats as stats # t-tests
 from scipy import optimize
-from optmatrix import matrixMult
-import kinship
+from .optmatrix import matrixMult
+from . import kinship
 
 sys.stderr.write("INFO: pylmm (lmm2) system path is "+":".join(sys.path)+"\n")
 sys.stderr.write("INFO: pylmm (lmm2) file is "+__file__+"\n")
@@ -32,12 +32,12 @@ try:
     sys.stderr.write("INFO: lmm2 try loading module\n")
     import utility.formatting # this is never used, just to check the environment
     sys.stderr.write("INFO: This is a genenetwork2 environment (lmm2)\n")
-    from gn2 import uses, progress_set_func
+    from .gn2 import uses, progress_set_func
 except ImportError:
     # Failed to load gn2
     has_gn2=False
-    import standalone as handlers
-    from standalone import uses, progress_set_func
+    from . import standalone as handlers
+    from .standalone import uses, progress_set_func
     sys.stderr.write("WARNING: LMM2 standalone version missing the Genenetwork2 environment\n")
 
 progress,mprint,debug,info,fatal = uses('progress','mprint','debug','info','fatal')
@@ -91,8 +91,8 @@ def GWAS(Y, X, K, Kva=[], Kve=[], X0=None, REML=True, refit=False):
       n = X.shape[0]
       m = X.shape[1]
       prins("Initialize GWAS")
-      print("genotype matrix n is:", n)
-      print("genotype matrix m is:", m)
+      print(("genotype matrix n is:", n))
+      print(("genotype matrix m is:", m))
 
       if X0 is None: 
          X0 = np.ones((n,1))
@@ -201,7 +201,7 @@ class LMM2:
 	 Kve = []
       self.nonmissing = x
 
-      print("this K is:", K.shape, K)
+      print(("this K is:", K.shape, K))
       
       if len(Kva) == 0 or len(Kve) == 0:
           # if self.verbose: sys.stderr.write("Obtaining eigendecomposition for %dx%d matrix\n" % (K.shape[0],K.shape[1]) )
@@ -210,7 +210,7 @@ class LMM2:
           Kva,Kve = kinship.kvakve(K)
           end = time.time()
           if self.verbose: sys.stderr.write("Total time: %0.3f\n" % (end - begin))
-          print("sum(Kva),sum(Kve)=",sum(Kva),sum(Kve))
+          print(("sum(Kva),sum(Kve)=",sum(Kva),sum(Kve)))
 
       self.K = K
       self.Kva = Kva
@@ -335,7 +335,7 @@ class LMM2:
 	 self.X0t_stack[:,(self.q)] = matrixMult(self.Kve.T,X)[:,0]
 	 X = self.X0t_stack
 
-      H = np.array(range(ngrids)) / float(ngrids)
+      H = np.array(list(range(ngrids))) / float(ngrids)
       L = np.array([self.LL(h,X,stack=False,REML=REML)[0] for h in H])
       self.LLs = L
 
@@ -357,11 +357,11 @@ class LMM2:
 
       """
       if False:
-         print "X=",X
-         print "h=",h
-         print "q=",self.q
-         print "self.Kve=",self.Kve
-         print "X0t_stack=",self.X0t_stack.shape,self.X0t_stack
+         print("X=",X)
+         print("h=",h)
+         print("q=",self.q)
+         print("self.Kve=",self.Kve)
+         print("X0t_stack=",self.X0t_stack.shape,self.X0t_stack)
       
       if stack:
 	 # X = np.hstack([self.X0t,matrixMult(self.Kve.T, X)])

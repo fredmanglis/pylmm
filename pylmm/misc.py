@@ -30,7 +30,7 @@ def fitTwo(y,K1,K2,X0=None,wgrids=100):
       '''
 
       # Create a uniform grid
-      W = np.array(range(wgrids)) / float(wgrids)
+      W = np.array(list(range(wgrids))) / float(wgrids)
       Res = []
       LLs = []
 

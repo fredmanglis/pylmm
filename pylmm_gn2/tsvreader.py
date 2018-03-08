@@ -22,7 +22,7 @@ import csv
 
 def kinship(fn):
     K1 = []
-    print fn
+    print(fn)
     with open(fn,'r') as tsvin:
         assert(tsvin.readline().strip() == "# Kinship format version 1.0")
         tsvin.readline()
@@ -36,7 +36,7 @@ def kinship(fn):
 
 def pheno(fn):
     Y1 = []
-    print fn
+    print(fn)
     with open(fn,'r') as tsvin:
         assert(tsvin.readline().strip() == "# Phenotype format version 1.0")
         tsvin.readline()
@@ -54,7 +54,7 @@ def geno(fn):
     hab_mapper = {'A':0,'H':1,'B':2,'-':3}
     pylmm_mapper = [ 0.0, 0.5, 1.0, float('nan') ]
 
-    print fn
+    print(fn)
     with open(fn,'r') as tsvin:
         line = tsvin.readline().strip()
         assert line == "# Genotype format version 1.0", line
@@ -86,7 +86,7 @@ def geno_callback(fn,func):
     hab_mapper = {'A':0,'H':1,'B':2,'-':3}
     pylmm_mapper = [ 0.0, 0.5, 1.0, float('nan') ]
 
-    print fn
+    print(fn)
     with open(fn,'r') as tsvin:
         assert(tsvin.readline().strip() == "# Genotype format version 1.0")
         tsvin.readline()
@@ -107,7 +107,7 @@ def geno_iter(fn):
     hab_mapper = {'A':0,'H':1,'B':2,'-':3}
     pylmm_mapper = [ 0.0, 0.5, 1.0, float('nan') ]
 
-    print fn
+    print(fn)
     with open(fn,'r') as tsvin:
         assert(tsvin.readline().strip() == "# Genotype format version 1.0")
         tsvin.readline()

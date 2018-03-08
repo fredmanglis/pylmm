@@ -23,19 +23,19 @@ import os
 import numpy as np
 from scipy import linalg
 import multiprocessing as mp # Multiprocessing is part of the Python stdlib
-import Queue
+import queue
 import time
 
-from optmatrix import matrix_initialize, matrixMultT
+from .optmatrix import matrix_initialize, matrixMultT
 
 # ---- A trick to decide on the environment:
 try:
     from wqflask.my_pylmm.pyLMM import chunks
-    from gn2 import uses, progress_set_func
+    from .gn2 import uses, progress_set_func
 except ImportError:
     has_gn2=False
-    import standalone as handlers
-    from standalone import uses, progress_set_func
+    from . import standalone as handlers
+    from .standalone import uses, progress_set_func
 
 progress,debug,info,mprint = uses('progress','debug','info','mprint')
 
@@ -63,7 +63,7 @@ def compute_W(job,G,n,snps,compute_size):
    for j in range(0,compute_size):
       pos = job*m + j # real position
       if pos >= snps:
-         W = W[:,range(0,j)]
+         W = W[:,list(range(0,j))]
          break
       snp = G[job*compute_size+j]
       if snp.var() == 0:
@@ -133,7 +133,7 @@ def kinship(G,computeSize=1000,numThreads=None,useBLAS=False):
                K = K + K_j
                completed += 1
                progress("kinship",completed,iterations)
-            except Queue.Empty:
+            except queue.Empty:
                pass
          
    if numThreads == None or numThreads > 1:

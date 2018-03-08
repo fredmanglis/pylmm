@@ -92,7 +92,7 @@ class plink:
     def __iter__(self):
         return self.getSNPIterator()
 
-    def next(self):
+    def __next__(self):
         if self.have_read == self.numSNPs:
             raise StopIteration
         X = self.fhandle.read(self.BytestoRead)
@@ -135,8 +135,8 @@ class plink:
     def normalizeGenotype(self,G):
         # print "Before",G
         # print G.shape
-        print "call input.normalizeGenotype"
-        raise "This should not be used"
+        print("call input.normalizeGenotype")
+        raise Exception("This should not be used")
         x = True - np.isnan(G)
         m = G[x].mean()
         s = np.sqrt(G[x].var())
@@ -168,7 +168,7 @@ class plink:
         for i in range(len(keys)):
             D[keys[i]] = i
         for i in range(len(self.indivs)):
-            if not D.has_key(self.indivs[i]):
+            if self.indivs[i] not in D:
                 continue 
             L.append(D[self.indivs[i]])
         P = P[L,:]
@@ -228,7 +228,7 @@ class plink:
         KK = []
         X = []
         for i in range(len(self.indivs)):
-            if not D.has_key(self.indivs[i]):
+            if self.indivs[i] not in D:
                 X.append(self.indivs[i])
             else: 
                 KK.append(self.indivs[i])
@@ -260,7 +260,7 @@ class plink:
         for i in range(len(keys)):
             D[keys[i]] = i
         for i in range(len(self.indivs)):
-            if not D.has_key(self.indivs[i]): continue 
+            if self.indivs[i] not in D: continue 
             L.append(D[self.indivs[i]])
         P = P[L,:]
      

@@ -12,7 +12,7 @@ hasBLAS = None
 def matrix_initialize(useBLAS=True): 
     global useNumpy  # module based variable
     if useBLAS and useNumpy == None:
-        print get_info('blas_opt')
+        print(get_info('blas_opt'))
         try:
             linalg.fblas
             sys.stderr.write("INFO: using linalg.fblas\n")

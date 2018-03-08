@@ -1,4 +1,4 @@
-from __future__ import print_function, division, absolute_import
+
 
 import collections
 import inspect
@@ -32,9 +32,9 @@ class Bench(object):
 
     @classmethod
     def report(cls):
-        total_time = sum((time_taken for time_taken in cls.entries.itervalues()))
+        total_time = sum((time_taken for time_taken in cls.entries.values()))
         print("\nTiming report\n")
-        for name, time_taken in cls.entries.iteritems():
+        for name, time_taken in cls.entries.items():
             percent = int(round((time_taken/total_time) * 100))
             print("[{}%] {}: {}".format(percent, name, time_taken))
         print()

@@ -20,24 +20,24 @@
 import pdb
 import time
 import sys
-import lmm2
+from . import lmm2
 
 import os
 import numpy as np
-import input
-from optmatrix import matrix_initialize
-from lmm2 import LMM2
+from . import input
+from .optmatrix import matrix_initialize
+from .lmm2 import LMM2
 
 import multiprocessing as mp # Multiprocessing is part of the Python stdlib
-import Queue 
+import queue 
 
 # ---- A trick to decide on the environment:
 try:
     from wqflask.my_pylmm.pyLMM import chunks
-    from gn2 import uses
+    from .gn2 import uses
 except ImportError:
     has_gn2=False
-    from standalone import uses
+    from .standalone import uses
 
 progress,mprint,debug,info,fatal = uses('progress','mprint','debug','info','fatal')
 
@@ -131,7 +131,7 @@ def gwas(Y,G,K,restricted_max_likelihood=True,refit=False,verbose=True):
                   progress("GWAS2",jobs_completed,snps/1000)
                   res.append((j,lst))
                   jobs_running -= 1
-               except Queue.Empty:
+               except queue.Empty:
                   time.sleep(0.1)
                   pass
                if jobs_running > cpu_num*2:

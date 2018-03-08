@@ -114,7 +114,7 @@ from pylmm import input
 from pylmm.optmatrix import matrix_initialize
 
 import multiprocessing as mp # Multiprocessing is part of the Python stdlib
-import Queue 
+import queue 
 
 matrix_initialize(options.useBLAS)
 cpu_num = mp.cpu_count()
@@ -371,7 +371,7 @@ for snp_id in IN:
                for line in lines:
                   out.write(line)
                completed += 1
-            except Queue.Empty:
+            except queue.Empty:
                pass
             if job > completed + cpu_num + 5:
                time.sleep(1)

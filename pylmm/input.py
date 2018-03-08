@@ -33,7 +33,7 @@ class plink:
 	 # Just read a line from the SNP file and see how many individuals we have
          message("Reading plink " + fbase)
 	 f = open(fbase,'r')
-	 self.indivs = range(len(f.readline().strip().split()))
+	 self.indivs = list(range(len(f.readline().strip().split())))
 	 f.close()
       self.kFile = kFile
       self.phenos = None
@@ -128,7 +128,7 @@ class plink:
 
    def __iter__(self): return self.getSNPIterator()
 
-   def next(self):
+   def __next__(self):
       if self.have_read == self.numSNPs: raise StopIteration
       self.have_read += 1
 
@@ -229,7 +229,7 @@ class plink:
 	 L = []
 	 for i in range(len(keys)): D[keys[i]] = i
 	 for i in range(len(self.indivs)):
-	    if not D.has_key(self.indivs[i]): continue 
+	    if self.indivs[i] not in D: continue 
 	    L.append(D[self.indivs[i]])
 	 P = P[L,:]
 
@@ -293,7 +293,7 @@ class plink:
 	 KK = []
 	 X = []
 	 for i in range(len(self.indivs)):
-	    if not D.has_key(self.indivs[i]): X.append(self.indivs[i])
+	    if self.indivs[i] not in D: X.append(self.indivs[i])
 	    else: 
 	       KK.append(self.indivs[i])
 	       L.append(D[self.indivs[i]])
@@ -335,7 +335,7 @@ class plink:
       L = []
       for i in range(len(keys)): D[keys[i]] = i
       for i in range(len(self.indivs)):
-	 if not D.has_key(self.indivs[i]): continue 
+	 if self.indivs[i] not in D: continue 
 	 L.append(D[self.indivs[i]])
       P = P[L,:]
 
