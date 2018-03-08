@@ -38,7 +38,7 @@ Basic usage:
 
       python pylmmGWAS.py -v --bfile plinkFile --kfile preComputedKinship.kin --phenofile plinkFormattedPhenotypeFile resultFile
 
-	    """
+            """
 parser = OptionParser(usage=usage)
 
 basicGroup = OptionGroup(parser, "Basic Options")
@@ -155,9 +155,9 @@ if options.emmaPheno:
       v = line.strip().split()
       p = []
       for x in v:
-	 try:
-	    p.append(float(x))
-	 except: p.append(np.nan)
+         try:
+            p.append(float(x))
+         except: p.append(np.nan)
       P.append(p)
    f.close()
    IN.phenos = np.array(P).T
